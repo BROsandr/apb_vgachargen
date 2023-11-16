@@ -3,7 +3,7 @@
 module TextMode_textBuffer80x60
                 #
                 (
-                    parameter CHARACTER_SET_COUNT = 20,
+                    parameter CHARACTER_SET_COUNT = 80 * 60,
                     parameter MEMFILELOC = "MemoryFile.mem"
                 )
                 (
@@ -11,6 +11,7 @@ module TextMode_textBuffer80x60
                     input wire enable,
                     input wire write_enable,
                     input wire [$clog2(CHARACTER_SET_COUNT)-1:0]inputData,
+                    input wire [$clog2(CHARACTER_SET_COUNT)-1:0]waddr_i,
 
                     input wire [$clog2(80*60)-1:0]currentCharacterPixelIndex_addressIn,
 
@@ -30,9 +31,8 @@ always @(posedge clk)
         if (enable == 1) 
             begin
                 if(write_enable == 1)
-                    REGMEM[currentCharacterPixelIndex_addressIn] = inputData;
+                    REGMEM[waddr_i] <= inputData;
                 currentCharacterIndex_dataOut <= REGMEM[currentCharacterPixelIndex_addressIn];
             end
     end
 endmodule
-

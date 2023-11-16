@@ -1,6 +1,10 @@
-module wrapper (
+module vgachargen_wrapper (
   input  logic clk_i,
   input  logic rst_ni,
+
+  input  logic [7:0]                 char_i,
+  input  logic [$clog2(80 * 60)-1:0] addr_i,
+  input  logic                       wen_i,
 
   output wire [3:0]R_o,
   output wire [3:0]G_o,
@@ -30,6 +34,10 @@ module wrapper (
   VGA_TextMode_topModule top (
     .clk   (clk_125m),
     .rst,
+
+    .char_i,
+    .addr_i,
+    .wen_i,
 
     .R     (R_o),
     .G     (G_o),

@@ -5,7 +5,11 @@ module VGA_TextMode_topModule
                 (
                     input wire clk,
                     input wire rst,
-                    
+
+                    input  wire [7:0]                 char_i,
+                    input  wire [$clog2(80 * 60)-1:0] addr_i,
+                    input  wire                       wen_i,
+
                     output wire [3:0]R, 
                     output wire [3:0]G, 
                     output wire [3:0]B,
@@ -69,8 +73,9 @@ TextMode_textBuffer80x60
                 (
                     .clk(clk),
                     .enable(1),
-                    .write_enable(0),
-                    .inputData(0),
+                    .write_enable(wen_i),
+                    .inputData(char_i),
+                    .waddr_i (addr_i),
 
                     .currentCharacterPixelIndex_addressIn(currentCharacterPixelIndex),
 
