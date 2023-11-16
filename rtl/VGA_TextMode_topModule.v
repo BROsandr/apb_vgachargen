@@ -97,8 +97,8 @@ TextMode_characterROM
 wire   currentPixel;
 assign currentPixel = (pixelDrawing == 1) ? ~currentCharacter[characterXY] : 0;
 
-assign R = (currentPixel) ? 4'b1: 4'b0;
-assign B = (currentPixel) ? 4'b1: 4'b0;
-assign G = (currentPixel) ? 4'b1: 4'b0;
+assign R = (currentPixel) ? 4'hf: 4'b0;
+assign B = (currentPixel) ? 4'hf: 4'b0;
+assign G = (currentPixel) ? 4'hf: 4'b0;
 
 endmodule
