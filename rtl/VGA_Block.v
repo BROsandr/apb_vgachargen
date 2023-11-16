@@ -79,80 +79,29 @@ VGA_pixelClockGenerator
                     pixelClk
                 );
 
+timing_generator timing_generator (
+  .clk_i   (pixelClk),
+  .arstn_i (~rst),
 
-VGA_HorizontalCounter
-                #
-                (
-                    .PIXEL_LIMIT(PIXEL_LIMIT-1)
-                )
-                HCounterIns
-                (
-                    pixelClk,
-                    rst, 
-                    hCount,
-                    EndOfLine
-                );
+  .vga_hs_o (hSYNC),
+  .vga_vs_o (vSYNC),
 
-VGA_HSyncGenerator 
-                #
-                (
-                    .HPIXEL(HPIXEL), 
-                    .H_FRONT_PORCH(H_FRONT_PORCH), 
-                    .H_SYNC_PULSE(H_SYNC_PULSE), 
-                    .H_BACK_PORCH(H_BACK_PORCH),
-                    .H_Polarity(H_Polarity)
-                ) 
-                HSyncGenIns
-                (
-                    hCount,
-                    hSYNC
-                );
+  .hd_i (HPIXEL), // Display area
+  .hf_i (H_FRONT_PORCH), // Front porch
+  .hr_i (H_SYNC_PULSE), // Retrace/Sync
+  .hb_i (H_BACK_PORCH), // Back Porch
 
-VGA_VerticalCounter
-                #
-                (
-                    .LINE_LIMIT(LINE_LIMIT-1)
-                )
-                VerticalCOuntins
-                (
-                    pixelClk,
-                    rst, 
-                    EndOfLine,
-                    vCount
-                );
+  .vd_i (VPIXEL),
+  .vf_i (V_FRONT_PORCH),
+  .vr_i (V_SYNC_PULSE),
+  .vb_i (V_BACK_PORCH),
+  .we_i (1'b1),
 
+  // Display timing counters
+  .hcount_o (xPixel),
+  .vcount_o (yPixel),
+  .pixel_enable_o (pixelDrawing)
 
-VGA_VSyncGenerator 
-                #
-                (
-                    .VPIXEL(VPIXEL),
-                    .V_FRONT_PORCH(V_FRONT_PORCH),
-                    .V_SYNC_PULSE(V_SYNC_PULSE),
-                    .V_BACK_PORCH(V_BACK_PORCH),
-                    .V_Polarity(V_Polarity)
-                ) 
-                VsyngenIns
-                (
-                    vCount,
-                    vSYNC
-                );
-
-
-VGA_xPixelyPixelGenerator
-                #
-                (
-                    .HPIXEL(HPIXEL),
-                    .VPIXEL(VPIXEL),
-                    .PIXEL_LIMIT(PIXEL_LIMIT),
-                    .LINE_LIMIT(LINE_LIMIT)
-                )
-                xPixelyPixelGeneratorIns
-                (
-                    hCount,
-                    vCount,
-                    xPixel,
-                    yPixel,
-                    pixelDrawing
-                );
+);
 
 endmodule
