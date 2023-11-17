@@ -130,9 +130,9 @@ module apb_vgachargen
   // Instantiation
   vgachargen_wrapper vgachargen_wrapper (
     .clk_i,
-    .rst_ni,
+    .rst_ni  (rstn_i),
     .char_i  (apb_pwdata_i[7:0]),
-    .addr_i  (apb_paddr_i[$clog2(80 * 60)-1:0]),
+    .addr_i  (apb_paddr_i[11:0]),
     .wen_i   (wen_ff),
     .R_o,
     .G_o,
