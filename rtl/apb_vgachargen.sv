@@ -1,6 +1,6 @@
 module apb_vgachargen
 #(
-  parameter APB_ADDR_WIDTH = 12,  // APB slaves are 4KB by default
+  parameter APB_ADDR_WIDTH = 13,  // extended APB slaves
   parameter APB_DATA_WIDTH = 32
 )
 (
