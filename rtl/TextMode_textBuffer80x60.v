@@ -11,7 +11,7 @@ module TextMode_textBuffer80x60
                     input wire enable,
                     input wire write_enable,
                     input wire [$clog2(CHARACTER_SET_COUNT)-1:0]inputData,
-                    input wire [$clog2(CHARACTER_SET_COUNT)-1:0]waddr_i,
+                    input wire [$clog2(80 * 60)-1:0]waddr_i,
 
                     input wire [$clog2(80*60)-1:0]currentCharacterPixelIndex_addressIn,
 
