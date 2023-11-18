@@ -43,8 +43,8 @@ module apb_vgachargen
 
   assign wen_en = apb_write | wen_ff;
 
-  assign wen_next = apb_write ? apb_pwdata_i[0]
-                  :                         '0;
+  assign wen_next = apb_write ? 1'b1
+                  :             1'b0;
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) wen_ff <= '0;
