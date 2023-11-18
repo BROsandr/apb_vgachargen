@@ -53,21 +53,38 @@ module apb_vgachargen
 
 
   // //////////////////////////
-  // // Data in registers    //
+  // // Char_in registers    //
   // //////////////////////////
 
-  // logic [7:0] data_in_ff;
-  // logic [7:0] data_in_next;
-  // logic       data_in_en;
+  logic [7:0] char_in_ff;
+  logic [7:0] char_in_next;
+  logic       char_in_en;
 
-  // assign data_in_en   = apb_write;
+  assign char_in_en   = apb_write;
 
-  // assign data_in_next = apb_pwdata_i[7:0];
+  assign char_in_next = apb_pwdata_i[7:0];
 
-  // always_ff @(posedge clk_i or negedge rstn_i) begin
-  //   if      (~rstn_i)    data_in_ff <= '0;
-  //   else if (data_in_en) data_in_ff <= data_in_next;
-  // end
+  always_ff @(posedge clk_i or negedge rstn_i) begin
+    if      (~rstn_i)    char_in_ff <= '0;
+    else if (char_in_en) char_in_ff <= char_in_next;
+  end
+
+  // //////////////////////////
+  // // addr_in registers    //
+  // //////////////////////////
+
+  logic [APB_ADDR_WIDTH-1:0] addr_in_ff;
+  logic [APB_ADDR_WIDTH-1:0] addr_in_next;
+  logic                      addr_in_en;
+
+  assign addr_in_en   = apb_write;
+
+  assign addr_in_next = apb_paddr_i;
+
+  always_ff @(posedge clk_i or negedge rstn_i) begin
+    if      (~rstn_i)    addr_in_ff <= '0;
+    else if (addr_in_en) addr_in_ff <= addr_in_next;
+  end
 
   //////////////////////////
   // APB data out         //
@@ -131,8 +148,8 @@ module apb_vgachargen
   vgachargen_wrapper vgachargen_wrapper (
     .clk_i,
     .rst_ni  (rstn_i),
-    .char_i  (apb_pwdata_i[7:0]),
-    .addr_i  (apb_paddr_i[11:0]),
+    .char_i  (char_in_ff),
+    .addr_i  (addr_in_ff),
     .wen_i   (wen_ff),
     .R_o,
     .G_o,
