@@ -68,9 +68,9 @@ module apb_vgachargen
   logic         ch_t_rw_data_in_en;
 
   assign ch_t_rw_data_in_en   = apb_write && apb_sel_ch_map;
-  assign ch_t_rw_data_in_next =  (ch_map_addr_ff[6:5] == 0) ? {ch_map_data2apb[127:33], apb_pwdata_i} :
-                                 (ch_map_addr_ff[6:5] == 1) ? {ch_map_data2apb[127:64], apb_pwdata_i, ch_map_data2apb[31:0]} :
-                                 (ch_map_addr_ff[6:5] == 2) ? {ch_map_data2apb[127:96], apb_pwdata_i, ch_map_data2apb[63:0]}
+  assign ch_t_rw_data_in_next =  (ch_map_addr_ff[4:3] == 0) ? {ch_map_data2apb[127:33], apb_pwdata_i} :
+                                 (ch_map_addr_ff[4:3] == 1) ? {ch_map_data2apb[127:64], apb_pwdata_i, ch_map_data2apb[31:0]} :
+                                 (ch_map_addr_ff[4:3] == 2) ? {ch_map_data2apb[127:96], apb_pwdata_i, ch_map_data2apb[63:0]}
                                                             : {apb_pwdata_i, ch_map_data2apb[95:0]};
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
@@ -85,7 +85,7 @@ module apb_vgachargen
   logic [$clog2(80 * 30)-1:0] ch_map_addr_ff;
   logic [$clog2(80 * 30)-1:0] ch_map_addr_next;
 
-  assign ch_map_addr_next = apb_paddr_i;
+  assign ch_map_addr_next = apb_paddr_i[$left(apb_paddr_i):3];
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) ch_map_addr_ff <= '0;
@@ -95,7 +95,7 @@ module apb_vgachargen
   logic [$clog2(80 * 30)-1:0] col_map_addr_ff;
   logic [$clog2(80 * 30)-1:0] col_map_addr_next;
 
-  assign col_map_addr_next = apb_paddr_i;
+  assign col_map_addr_next = apb_paddr_i[$left(apb_paddr_i):3];
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) col_map_addr_ff <= '0;
@@ -105,7 +105,7 @@ module apb_vgachargen
   logic [$clog2(80 * 30)-1:0] ch_t_rw_addr_ff;
   logic [$clog2(80 * 30)-1:0] ch_t_rw_addr_next;
 
-  assign ch_t_rw_addr_next = apb_paddr_i;
+  assign ch_t_rw_addr_next = apb_paddr_i[$left(apb_paddr_i):3];
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) ch_t_rw_addr_ff <= '0;
