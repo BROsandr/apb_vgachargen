@@ -13,6 +13,7 @@ module VGA_TextMode_topModule
                     input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
                     input  wire                       ch_map_wen_i,
                     input  wire                       col_map_wen_i,
+                    input  wire                       clk_25m,
 
                     output wire [3:0]R, 
                     output wire [3:0]G, 
@@ -31,7 +32,19 @@ localparam COL_MEMLOC = "cols.mem";
 
 wire [$clog2(640)-1:0]xPixel;
 wire [$clog2(480)-1:0]yPixel;
-wire pixelDrawing;
+
+reg [1:0] pixelDrawing_ff;
+reg       pixelDrawing_next;
+
+always @(posedge clk_25m) begin
+  if (rst) pixelDrawing_ff <= '0;
+  else     pixelDrawing_ff <= {pixelDrawing_ff[0], pixelDrawing_next};
+end
+
+  logic [1:0] hSYNC_ff;
+  logic       hSYNC_next;
+  logic [1:0] vSYNC_ff;
+  logic       vSYNC_next;
 
 VGA_Block
                 #
@@ -42,18 +55,37 @@ VGA_Block
                 (
                     .systemClk_125MHz(clk),
                     .rst(rst),
+                    .clk_25m(clk_25m),
 
                     .xPixel(xPixel),
                     .yPixel(yPixel),
-                    .pixelDrawing(pixelDrawing),
+                    .pixelDrawing(pixelDrawing_next),
 
-                    .hSYNC(hSYNC),
-                    .vSYNC(vSYNC)
+                    .hSYNC(hSYNC_next),
+                    .vSYNC(vSYNC_next)
                 );
 
 
 wire [$clog2(80*30)-1:0]currentCharacterPixelIndex;
-wire [$clog2(8 * 16)-1:0]characterXY;
+
+reg [$clog2(8 * 16)-1:0] characterXY_ff1;
+reg [$clog2(8 * 16)-1:0] characterXY_ff2;
+reg [$clog2(8 * 16)-1:0] characterXY_next;
+
+  always_ff @(clk_25m) begin
+    if (rst) hSYNC_ff <= '0;
+    else     hSYNC_ff <= {hSYNC_ff[0], hSYNC_next};
+  end
+
+  always_ff @(clk_25m) begin
+    if (rst) vSYNC_ff <= '0;
+    else     vSYNC_ff <= {vSYNC_ff[0], vSYNC_next};
+  end
+
+always @(posedge clk_25m) begin
+  if (rst) {characterXY_ff2, characterXY_ff1} <= '0;
+  else     {characterXY_ff2, characterXY_ff1} <= {characterXY_ff1, characterXY_next};
+end
 
 TextMode_indexGenerator TMindexGenIns
                 (
@@ -61,7 +93,7 @@ TextMode_indexGenerator TMindexGenIns
                     .yPixel(yPixel),
 
                     .currentCharacterPixelIndex(currentCharacterPixelIndex),
-                    .characterXY(characterXY)
+                    .characterXY(characterXY_next)
                 );
 
 
@@ -76,12 +108,11 @@ TextMode_textBuffer80x60
                 )
                 TMtextBuffIns
                 (
-                    .clk(clk),
+                    .clk(clk_25m),
                     .enable(1),
                     .write_enable(ch_map_wen_i),
                     .inputData(ch_map_data_i),
                     .waddr_i (ch_map_addr_i),
-
                     .currentCharacterPixelIndex_addressIn(currentCharacterPixelIndex),
 
                     .currentCharacterIndex_dataOut(currentCharacterIndex)
@@ -97,39 +128,49 @@ TextMode_characterROM
                 )
                 TMcharacterROMIns
                 (
-                    .clk(clk),
+                    .clk(clk_25m),
                     .enable(1),
 
                     .chracterIndex_addressIn(currentCharacterIndex),
                     .currentCharacter_dataOut(currentCharacter)
                 );
 
-  logic [7:0] color;
+  logic [7:0]      color_next;
+  logic [7:0] color_ff1;
+  logic [7:0] color_ff2;
   logic [3:0] fg_color;
   logic [3:0] bg_color;
 
-  assign fg_color = color[7:4];
-  assign bg_color = color[3:0];
+  assign fg_color = color_ff1[7:4];
+  assign bg_color = color_ff1[3:0];
 
   true_dual_port_bram #(
     .INIT_FILE   (COL_MEMLOC),
     .DATA_WIDTH  (8),
     .DEPTH_WORDS (80 * 30)
   ) true_dual_port_bram (
-    .clk_i   (clk),
+    .clk_i   (clk_25m),
     .addra_i (col_map_addr_i),
     .addrb_i (currentCharacterPixelIndex),
     .wea_i   (col_map_wen_i),
     .dina_i  (col_map_data_i),
     .douta_o (col_map_data_o),
-    .doutb_o (color)
+    .doutb_o (color_next)
   );
 
-wire   currentPixel;
-assign currentPixel = (pixelDrawing == 1) ? ~currentCharacter[characterXY] : 0;
+  always_ff @(clk_25m) begin
+    if (rst) {color_ff2, color_ff1} <= '0;
+    else     {color_ff2, color_ff1} <= {color_ff1, color_next};
+  end
 
-assign R = ~((currentPixel) ? fg_color: bg_color);
-assign B = ~((currentPixel) ? fg_color: bg_color);
-assign G = ~((currentPixel) ? fg_color: bg_color);
+wire   currentPixel;
+assign currentPixel = (pixelDrawing_ff[1] == 1) ? ~currentCharacter[characterXY_ff2] : 0;
+
+assign R = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign B = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign G = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+
+  assign vSYNC = vSYNC_ff[1];
+  assign hSYNC = hSYNC_ff[1];
 
 endmodule

@@ -48,6 +48,7 @@ module VGA_Block
                 )
                 (
                     input wire systemClk_125MHz,
+                    input wire clk_25m,
                     input wire rst,
 
                     output wire [$clog2(PIXEL_LIMIT)-1:0]xPixel,
@@ -80,7 +81,7 @@ VGA_pixelClockGenerator
                 );
 
 timing_generator timing_generator (
-  .clk_i   (pixelClk),
+  .clk_i   (clk_25m),
   .arstn_i (~rst),
 
   .vga_hs_o (hSYNC),
