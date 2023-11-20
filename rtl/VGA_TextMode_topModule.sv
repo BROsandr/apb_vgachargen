@@ -6,13 +6,18 @@ module VGA_TextMode_topModule
                     input wire clk,
                     input wire rst,
 
-                    input  wire [7:0]                 ch_map_data_i,
                     input  wire [7:0]                 col_map_data_i,
                     input  wire [7:0]                 col_map_data_o,
-                    input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
                     input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
-                    input  wire                       ch_map_wen_i,
                     input  wire                       col_map_wen_i,
+                    input  wire [7:0]                 ch_map_data_i,
+                    input  wire [7:0]                 ch_map_data_o,
+                    input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
+                    input  wire                       ch_map_wen_i,
+                    input  wire [127:0]               ch_t_rw_data_i,
+                    input  wire [127:0]               ch_t_rw_data_o,
+                    input  wire                       ch_t_rw_wen_i,
+                    input  wire [$clog2(128)-1:0]     ch_t_rw_addr_i,
                     input  wire                       clk_25m,
 
                     output wire [3:0]R, 
@@ -118,22 +123,40 @@ TextMode_textBuffer80x60
                     .currentCharacterIndex_dataOut(currentCharacterIndex)
                 );
 
+wire [16 * 8-1:0]currentCharacter_ch_t_ro;
+wire [16 * 8-1:0]currentCharacter_ch_t_rw;
 wire [16 * 8-1:0]currentCharacter;
 
 TextMode_characterROM
                 #
                 (
-                    .CHARACTER_SET_COUNT(CHARACTER_SET_COUNT),
+                    .CHARACTER_SET_COUNT(CHARACTER_SET_COUNT/2),
                     .MEMFILELOC(CHARACTER_ROM_MEMLOC)
                 )
-                TMcharacterROMIns
+                ch_t_ro
                 (
                     .clk(clk_25m),
                     .enable(1),
 
-                    .chracterIndex_addressIn(currentCharacterIndex),
-                    .currentCharacter_dataOut(currentCharacter)
+                    .chracterIndex_addressIn(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
+                    .currentCharacter_dataOut(currentCharacter_ch_t_ro)
                 );
+
+  true_dual_port_bram #(
+    .INIT_FILE   (),
+    .DATA_WIDTH  (127),
+    .DEPTH_WORDS (CHARACTER_SET_COUNT/2)
+  ) ch_t_rw (
+    .clk_i   (clk_25m),
+    .addra_i (ch_t_rw_addr_i),
+    .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
+    .wea_i   (ch_t_rw_wen_i),
+    .dina_i  (ch_t_rw_data_i),
+    .douta_o (col_map_data_o),
+    .doutb_o (currentCharacter_ch_t_rw)
+  );
+
+  assign currentCharacter = currentCharacterIndex[$left(currentCharacterIndex)] ? currentCharacter_ch_t_rw : currentCharacter_ch_t_ro;
 
   logic [7:0]      color_next;
   logic [7:0] color_ff1;
@@ -148,7 +171,7 @@ TextMode_characterROM
     .INIT_FILE   (COL_MEMLOC),
     .DATA_WIDTH  (8),
     .DEPTH_WORDS (80 * 30)
-  ) true_dual_port_bram (
+  ) col_map (
     .clk_i   (clk_25m),
     .addra_i (col_map_addr_i),
     .addrb_i (currentCharacterPixelIndex),
