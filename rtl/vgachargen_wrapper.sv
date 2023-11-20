@@ -35,9 +35,13 @@ module vgachargen_wrapper (
     .clk   (clk_125m),
     .rst,
 
-    .char_i,
-    .addr_i,
-    .wen_i,
+    .ch_map_data_i  ('0),
+    .col_map_data_i ('0),
+    .col_map_data_o (),
+    .ch_map_addr_i  ('0),
+    .col_map_addr_i ('0),
+    .ch_map_wen_i   ('0),
+    .col_map_wen_i  ('0),
 
     .R     (R_o),
     .G     (G_o),
