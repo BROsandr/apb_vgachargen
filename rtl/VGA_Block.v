@@ -80,7 +80,7 @@ VGA_pixelClockGenerator
                 );
 
 timing_generator timing_generator (
-  .clk_i   (systemClk_125MHz),
+  .clk_i   (pixelClk),
   .arstn_i (~rst),
 
   .vga_hs_o (hSYNC),
@@ -96,7 +96,6 @@ timing_generator timing_generator (
   .vr_i (V_SYNC_PULSE),
   .vb_i (V_BACK_PORCH),
   .we_i (1'b1),
-  .en_i (~pixelClk),
 
   // Display timing counters
   .hcount_o (xPixel),
