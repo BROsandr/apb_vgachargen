@@ -3,7 +3,7 @@
 module TextMode_textBuffer80x60
                 #
                 (
-                    parameter CHARACTER_SET_COUNT = 80 * 60,
+                    parameter CHARACTER_SET_COUNT = 80 * 30,
                     parameter MEMFILELOC = "MemoryFile.mem"
                 )
                 (
@@ -11,9 +11,9 @@ module TextMode_textBuffer80x60
                     input wire enable,
                     input wire write_enable,
                     input wire [$clog2(CHARACTER_SET_COUNT)-1:0]inputData,
-                    input wire [$clog2(80 * 60)-1:0]waddr_i,
+                    input wire [$clog2(80 * 30)-1:0]waddr_i,
 
-                    input wire [$clog2(80*60)-1:0]currentCharacterPixelIndex_addressIn,
+                    input wire [$clog2(80*30)-1:0]currentCharacterPixelIndex_addressIn,
 
                     output reg [$clog2(CHARACTER_SET_COUNT)-1:0]currentCharacterIndex_dataOut
                 );
@@ -21,7 +21,7 @@ module TextMode_textBuffer80x60
 
 
 (* RAM_STYLE="BLOCK" *)
-reg [$clog2(CHARACTER_SET_COUNT)-1:0]REGMEM[0:(80*60)-1];
+reg [$clog2(CHARACTER_SET_COUNT)-1:0]REGMEM[0:(80*30)-1];
 
 initial 
     $readmemh(MEMFILELOC, REGMEM);

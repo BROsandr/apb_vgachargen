@@ -7,7 +7,7 @@ module VGA_TextMode_topModule
                     input wire rst,
 
                     input  wire [7:0]                 char_i,
-                    input  wire [$clog2(80 * 60)-1:0] addr_i,
+                    input  wire [$clog2(80 * 30)-1:0] addr_i,
                     input  wire                       wen_i,
 
                     output wire [3:0]R, 
@@ -47,8 +47,8 @@ VGA_Block
                 );
 
 
-wire [$clog2(80*60)-1:0]currentCharacterPixelIndex;
-wire [$clog2(64)-1:0]characterXY;
+wire [$clog2(80*30)-1:0]currentCharacterPixelIndex;
+wire [$clog2(8 * 16)-1:0]characterXY;
 
 TextMode_indexGenerator TMindexGenIns
                 (
@@ -82,7 +82,7 @@ TextMode_textBuffer80x60
                     .currentCharacterIndex_dataOut(currentCharacterIndex)
                 );
 
-wire [64-1:0]currentCharacter;
+wire [16 * 8-1:0]currentCharacter;
 
 TextMode_characterROM
                 #
