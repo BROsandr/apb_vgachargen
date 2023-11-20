@@ -105,22 +105,23 @@ TextMode_indexGenerator TMindexGenIns
 
 wire [$clog2(CHARACTER_SET_COUNT)-1:0]currentCharacterIndex;
 
-TextMode_textBuffer80x60
+true_dual_port_bram
                 #
                 (
-                    .CHARACTER_SET_COUNT(CHARACTER_SET_COUNT),
-                    .MEMFILELOC(CHARACTER_BUFFER_MEMLOC)
+                  .INIT_FILE   (CHARACTER_BUFFER_MEMLOC),
+                  .DATA_WIDTH  ($clog2(CHARACTER_SET_COUNT)),
+                  .DEPTH_WORDS (80 * 30)
                 )
                 TMtextBuffIns
                 (
-                    .clk(clk_25m),
-                    .enable(1),
-                    .write_enable(ch_map_wen_i),
-                    .inputData(ch_map_data_i),
-                    .waddr_i (ch_map_addr_i),
-                    .currentCharacterPixelIndex_addressIn(currentCharacterPixelIndex),
-
-                    .currentCharacterIndex_dataOut(currentCharacterIndex)
+                    .clkb_i  (clk_25m),
+                    .clka_i  (clk),
+                    .addra_i (ch_map_addr_i),
+                    .addrb_i (currentCharacterPixelIndex),
+                    .wea_i   (ch_map_wen_i),
+                    .dina_i  (ch_map_data_i),
+                    .douta_o (ch_map_data_o),
+                    .doutb_o (currentCharacterIndex)
                 );
 
 wire [16 * 8-1:0]currentCharacter_ch_t_ro;
@@ -147,7 +148,8 @@ TextMode_characterROM
     .DATA_WIDTH  (127),
     .DEPTH_WORDS (CHARACTER_SET_COUNT/2)
   ) ch_t_rw (
-    .clk_i   (clk_25m),
+    .clka_i  (clk),
+    .clkb_i  (clk_25m),
     .addra_i (ch_t_rw_addr_i),
     .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
     .wea_i   (ch_t_rw_wen_i),
@@ -172,7 +174,8 @@ TextMode_characterROM
     .DATA_WIDTH  (8),
     .DEPTH_WORDS (80 * 30)
   ) col_map (
-    .clk_i   (clk_25m),
+    .clka_i  (clk),
+    .clkb_i   (clk_25m),
     .addra_i (col_map_addr_i),
     .addrb_i (currentCharacterPixelIndex),
     .wea_i   (col_map_wen_i),
