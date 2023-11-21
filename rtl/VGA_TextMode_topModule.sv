@@ -7,15 +7,15 @@ module VGA_TextMode_topModule
                     input wire rst,
 
                     input  wire [7:0]                 col_map_data_i,
-                    input  wire [7:0]                 col_map_data_o,
+                    output wire [7:0]                 col_map_data_o,
                     input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
                     input  wire                       col_map_wen_i,
                     input  wire [7:0]                 ch_map_data_i,
-                    input  wire [7:0]                 ch_map_data_o,
+                    output wire [7:0]                 ch_map_data_o,
                     input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
                     input  wire                       ch_map_wen_i,
                     input  wire [127:0]               ch_t_rw_data_i,
-                    input  wire [127:0]               ch_t_rw_data_o,
+                    output wire [127:0]               ch_t_rw_data_o,
                     input  wire                       ch_t_rw_wen_i,
                     input  wire [$clog2(128)-1:0]     ch_t_rw_addr_i,
                     input  wire                       clk_25m,
@@ -154,7 +154,7 @@ TextMode_characterROM
     .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
     .wea_i   (ch_t_rw_wen_i),
     .dina_i  (ch_t_rw_data_i),
-    .douta_o (col_map_data_o),
+    .douta_o (ch_t_rw_data_o),
     .doutb_o (currentCharacter_ch_t_rw)
   );
 
