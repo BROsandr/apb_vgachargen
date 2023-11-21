@@ -2,7 +2,7 @@ module clk_divider # (
   parameter int unsigned DIVISOR = 2
 ) (
   input  logic                       clk_i,
-  input  logic                       arst_ni,
+  input  logic                       arstn_i,
   output logic                       strb_o
 );
   localparam int unsigned COUNTER_WIDTH = $clog2(DIVISOR);
@@ -12,8 +12,8 @@ module clk_divider # (
 
   assign counter_next = (counter_ff < DIVISOR) ? (counter_ff + COUNTER_WIDTH'(1)) : '0;
 
-  always_ff @(posedge clk_i or negedge arst_ni) begin
-    if   (~arst_ni) counter_ff <= '0;
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (~arstn_i) counter_ff <= '0;
     else            counter_ff <= counter_next;
   end
 
@@ -22,8 +22,8 @@ module clk_divider # (
 
   assign strb_next = ~|counter_ff;
 
-  always_ff @(posedge clk_i or negedge arst_ni) begin
-    if   (~arst_ni) strb_ff <= '0;
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (~arstn_i) strb_ff <= '0;
     else            strb_ff <= strb_next;
   end
 

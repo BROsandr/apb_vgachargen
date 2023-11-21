@@ -52,24 +52,17 @@ end
   logic [1:0] vSYNC_ff;
   logic       vSYNC_next;
 
-VGA_Block
-                #
-                (
-                    .MODES(0) // finixing to 640 x 480 for 80 x60 text buffer
-                )
-                VGABLOCKIns
-                (
-                    .systemClk_125MHz(clk),
-                    .rst(rst),
-                    .clk_25m(clk_25m),
-
-                    .xPixel(xPixel),
-                    .yPixel(yPixel),
-                    .pixelDrawing(pixelDrawing_next),
-
-                    .hSYNC(hSYNC_next),
-                    .vSYNC(vSYNC_next)
-                );
+  vga_block #(
+    .CLK_FACTOR_25M (4)
+  ) vga_block (
+    .clk_i          (clk_25m),
+    .arstn_i        (~rst),
+    .hcount_o       (xPixel),
+    .vcount_o       (yPixel),
+    .pixel_enable_o (pixelDrawing_next),
+    .vga_hs_o       (hSYNC_next),
+    .vga_vs_o       (vSYNC_next)
+  );
 
 
 wire [$clog2(80*30)-1:0]currentCharacterPixelIndex;
