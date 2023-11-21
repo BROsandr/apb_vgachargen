@@ -1,5 +1,6 @@
 module true_dual_port_bram #(
   parameter               INIT_FILE   = "",
+  parameter               BINARY_FILE = 0,
   parameter  int unsigned DATA_WIDTH  = 2,
   parameter  int unsigned DEPTH_WORDS = 2,
   localparam int unsigned ADDR_WIDTH  = $clog2(DEPTH_WORDS)
@@ -16,7 +17,8 @@ module true_dual_port_bram #(
   logic [DATA_WIDTH-1:0] mem[DEPTH_WORDS];
 
   if (INIT_FILE != "") begin                             : use_init_file
-    initial $readmemh(INIT_FILE, mem, 0, DEPTH_WORDS-1);
+    if (BINARY_FILE) initial  $readmemb(INIT_FILE, mem, 0, DEPTH_WORDS-1);
+    else             initial  $readmemh(INIT_FILE, mem, 0, DEPTH_WORDS-1);
   end else begin                                         : init_bram_to_zero
     initial begin
       for (int unsigned i = 0; i < DEPTH_WORDS; ++i) mem[i] = '0;

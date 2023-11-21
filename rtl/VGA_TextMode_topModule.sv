@@ -31,7 +31,8 @@ module VGA_TextMode_topModule
                 
                 
 localparam CHARACTER_SET_COUNT = 256;
-localparam CHARACTER_ROM_MEMLOC = "CharacterROM_ASCII.mem";
+localparam CHARACTER_ROM_MEMLOC = "ch_t_ro.mem";
+localparam CH_T_RW_INIT_FILE = "ch_t_rw.mem";
 localparam CHARACTER_BUFFER_MEMLOC = "characterBuffer80x60.mem";
 localparam COL_MEMLOC = "cols.mem";
 
@@ -144,9 +145,10 @@ TextMode_characterROM
                 );
 
   true_dual_port_bram #(
-    .INIT_FILE   (),
+    .INIT_FILE   (CH_T_RW_INIT_FILE),
     .DATA_WIDTH  (127),
-    .DEPTH_WORDS (CHARACTER_SET_COUNT/2)
+    .DEPTH_WORDS (CHARACTER_SET_COUNT/2),
+    .BINARY_FILE (1)
   ) ch_t_rw (
     .clka_i  (clk),
     .clkb_i  (clk_25m),
