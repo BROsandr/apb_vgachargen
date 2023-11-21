@@ -11,15 +11,15 @@ module vgachargen_wrapper (
   output wire [3:0]B_o,
 
   input  wire [7:0]                 col_map_data_i,
-  input  wire [7:0]                 col_map_data_o,
+  output wire [7:0]                 col_map_data_o,
   input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
   input  wire                       col_map_wen_i,
   input  wire [7:0]                 ch_map_data_i,
-  input  wire [7:0]                 ch_map_data_o,
+  output wire [7:0]                 ch_map_data_o,
   input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
   input  wire                       ch_map_wen_i,
   input  wire [127:0]               ch_t_rw_data_i,
-  input  wire [127:0]               ch_t_rw_data_o,
+  output wire [127:0]               ch_t_rw_data_o,
   input  wire                       ch_t_rw_wen_i,
   input  wire [$clog2(128)-1:0]     ch_t_rw_addr_i,
 
