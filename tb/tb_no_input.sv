@@ -6,7 +6,7 @@ module tb_no_input ();
   logic clk;
   logic arst_n;
 
-  localparam int unsigned CLK_PERIOD = 8;
+  localparam int unsigned CLK_PERIOD = 10;
 
   initial begin
     clk <= 0;
@@ -28,22 +28,34 @@ module tb_no_input ();
     end
   end
 
-  VGA_TextMode_topModule VGA_TextMode_topModule (
-      .clk,
-      .rst (~arst_n),
-      .clk_25m (clk_25m),
+vgachargen_wrapper vgachargen_wrapper (
+  .clk_i (clk),
+  .rst_ni (arst_n),
 
-//      .char_i (),
-//      .addr_i (),
-//      .wen_i  (),
+//  input  logic [7:0]                 char_i,
+//  input  logic [$clog2(80 * 30)-1:0] addr_i,
+//  input  logic                       wen_i,
 
-      .R (),
-      .G (),
-      .B (),
+  .R_o (),
+  .G_o (),
+  .B_o (),
 
-      .hSYNC (),
-      .vSYNC ()
-  );
+  // input  wire [7:0]                 col_map_data_i,
+  // output wire [7:0]                 col_map_data_o,
+  // input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
+  // input  wire                       col_map_wen_i,
+  // input  wire [7:0]                 ch_map_data_i,
+  // output wire [7:0]                 ch_map_data_o,
+  // input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
+  // input  wire                       ch_map_wen_i,
+  // input  wire [127:0]               ch_t_rw_data_i,
+  // output wire [127:0]               ch_t_rw_data_o,
+  // input  wire                       ch_t_rw_wen_i,
+  // input  wire [$clog2(128)-1:0]     ch_t_rw_addr_i,
+
+  .hSYNC_o(),
+  .vSYNC_o ()
+);
 
   initial begin
     reset();

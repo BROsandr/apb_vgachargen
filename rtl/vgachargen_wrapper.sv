@@ -46,7 +46,7 @@ module vgachargen_wrapper (
   
   logic rst;
 
-  assign rst = ~rst_ni | ~locked;
+  assign rst = ~rst_ni;
 
   VGA_TextMode_topModule top (
     .clk   (clk_125m),

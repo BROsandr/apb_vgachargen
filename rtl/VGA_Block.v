@@ -54,7 +54,7 @@ module VGA_Block
                     output wire [$clog2(PIXEL_LIMIT)-1:0]xPixel,
                     output wire [$clog2(LINE_LIMIT)-1:0]yPixel,
                     output wire pixelDrawing,
-                    input  logic                         en_i,
+                    input  wire                         en_i,
 
 
                     output wire hSYNC,
@@ -87,7 +87,7 @@ timing_generator timing_generator (
 
   .vga_hs_o (hSYNC),
   .vga_vs_o (vSYNC),
-  .en_i,
+  .en_i (en_i),
 
   .hd_i (HPIXEL), // Display area
   .hf_i (H_FRONT_PORCH), // Front porch
