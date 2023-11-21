@@ -85,18 +85,7 @@ timing_generator timing_generator (
 
   .vga_hs_o (hSYNC),
   .vga_vs_o (vSYNC),
-  .en_i (clk_divider_strb),
-
-  .hd_i (HPIXEL), // Display area
-  .hf_i (H_FRONT_PORCH), // Front porch
-  .hr_i (H_SYNC_PULSE), // Retrace/Sync
-  .hb_i (H_BACK_PORCH), // Back Porch
-
-  .vd_i (VPIXEL),
-  .vf_i (V_FRONT_PORCH),
-  .vr_i (V_SYNC_PULSE),
-  .vb_i (V_BACK_PORCH),
-  .we_i (1'b1),
+  .en_i     (clk_divider_strb),
 
   // Display timing counters
   .hcount_o (xPixel),
