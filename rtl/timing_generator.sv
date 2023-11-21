@@ -16,6 +16,7 @@ module timing_generator
   input  logic [VGA_MAX_V_WIDTH-1:0] vf_i,
   input  logic [VGA_MAX_V_WIDTH-1:0] vr_i,
   input  logic [VGA_MAX_V_WIDTH-1:0] vb_i,
+  input  logic                       en_i,
   
   input  logic                       we_i,
 
@@ -98,10 +99,10 @@ module timing_generator
   assign hcount_next = ( hcount_ff < ( htotal_ff - 1 ) ) ? ( hcount_ff + 1 ) : ( '0 );
   always_ff @ ( posedge clk_i or negedge arstn_i )
     if      ( ~arstn_i  ) hcount_ff <= '0;
-    else                  hcount_ff <= hcount_next;
+    else if (en_i)        hcount_ff <= hcount_next;
   
   // Vertical counter
-  assign vcount_en   = ( hcount_ff == ( htotal_ff - 1 ) );
+  assign vcount_en   = ( hcount_ff == ( htotal_ff - 1 ) && en_i );
   assign vcount_next = ( vcount_ff < ( vtotal_ff - 1 ) ) ? ( vcount_ff + 1 ) : ( '0 );
   always_ff @( posedge clk_i or negedge arstn_i ) 
     if      ( ~arstn_i    ) vcount_ff <= '0;
@@ -119,7 +120,7 @@ module timing_generator
     if( ~arstn_i ) begin
       hstate_ff <= DISPLAY_S;
       vstate_ff <= DISPLAY_S;
-    end else begin
+    end else if (en_i) begin
       hstate_ff <= hstate_next;
       vstate_ff <= vstate_next;
     end

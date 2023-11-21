@@ -27,20 +27,22 @@ module vgachargen_wrapper (
   output wire vSYNC_o
 );
 
+  logic clk_25m;
+  assign clk_25m = clk_i;
+
   logic clk_125m;
   logic locked;
   logic clk_25m;
 
-  clk_wiz_0 clk_wiz_0 (
-    // Clock out ports
-    .clk_out1(clk_125m),     // output clk_out1
-    .clk_out2(clk_25m),
-    // Status and control signals
-    .resetn(rst_ni), // input resetn
-    .locked(locked),       // output locked
-   // Clock in ports
-    .clk_in1(clk_i)
-  );      // input clk_in1
+  logic clk_divider_strb;
+
+  clk_divider # (
+    .DIVISOR (4)
+  ) clk_divider (
+    .clk_i,
+    .arst_ni (rst_ni),
+    .strb_o  (clk_divider_strb)
+  );
   
   logic rst;
 
@@ -49,6 +51,7 @@ module vgachargen_wrapper (
   VGA_TextMode_topModule top (
     .clk   (clk_125m),
     .clk_25m (clk_25m),
+    .en_i    (clk_divider_strb),
     .rst,
 
     .col_map_data_i,

@@ -54,6 +54,7 @@ module VGA_Block
                     output wire [$clog2(PIXEL_LIMIT)-1:0]xPixel,
                     output wire [$clog2(LINE_LIMIT)-1:0]yPixel,
                     output wire pixelDrawing,
+                    input  logic                         en_i,
 
 
                     output wire hSYNC,
@@ -68,17 +69,17 @@ wire pixelClk, EndOfLine;
 wire [$clog2(PIXEL_LIMIT)-1:0]hCount;
 wire [$clog2(LINE_LIMIT)-1:0]vCount;
 
-VGA_pixelClockGenerator 
-                #
-                (
-                    .DIV_BY(DIV_BY)
-                )
-                VGApixelClockGneratorIns
-                (
-                    systemClk_125MHz,
-                    rst,
-                    pixelClk
-                );
+// VGA_pixelClockGenerator 
+//                 #
+//                 (
+//                     .DIV_BY(DIV_BY)
+//                 )
+//                 VGApixelClockGneratorIns
+//                 (
+//                     systemClk_125MHz,
+//                     rst,
+//                     pixelClk
+//                 );
 
 timing_generator timing_generator (
   .clk_i   (clk_25m),
@@ -86,6 +87,7 @@ timing_generator timing_generator (
 
   .vga_hs_o (hSYNC),
   .vga_vs_o (vSYNC),
+  .en_i,
 
   .hd_i (HPIXEL), // Display area
   .hf_i (H_FRONT_PORCH), // Front porch
