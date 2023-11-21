@@ -6,8 +6,6 @@ module VGA_TextMode_topModule
                     input wire clk,
                     input wire rst,
 
-                    input logic en_i,
-
                     input  wire [7:0]                 col_map_data_i,
                     output wire [7:0]                 col_map_data_o,
                     input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
@@ -64,7 +62,6 @@ VGA_Block
                     .systemClk_125MHz(clk),
                     .rst(rst),
                     .clk_25m(clk_25m),
-                    .en_i (en_i),
 
                     .xPixel(xPixel),
                     .yPixel(yPixel),

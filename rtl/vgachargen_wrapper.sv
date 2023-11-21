@@ -33,16 +33,6 @@ module vgachargen_wrapper (
   logic clk_125m;
   logic locked;
   logic clk_25m;
-
-  logic clk_divider_strb;
-
-  clk_divider # (
-    .DIVISOR (4)
-  ) clk_divider (
-    .clk_i,
-    .arst_ni (rst_ni),
-    .strb_o  (clk_divider_strb)
-  );
   
   logic rst;
 
@@ -51,7 +41,6 @@ module vgachargen_wrapper (
   VGA_TextMode_topModule top (
     .clk   (clk_125m),
     .clk_25m (clk_25m),
-    .en_i    (clk_divider_strb),
     .rst,
 
     .col_map_data_i,

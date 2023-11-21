@@ -69,17 +69,15 @@ wire pixelClk, EndOfLine;
 wire [$clog2(PIXEL_LIMIT)-1:0]hCount;
 wire [$clog2(LINE_LIMIT)-1:0]vCount;
 
-// VGA_pixelClockGenerator 
-//                 #
-//                 (
-//                     .DIV_BY(DIV_BY)
-//                 )
-//                 VGApixelClockGneratorIns
-//                 (
-//                     systemClk_125MHz,
-//                     rst,
-//                     pixelClk
-//                 );
+  logic clk_divider_strb;
+
+  clk_divider # (
+    .DIVISOR (4)
+  ) clk_divider (
+    .clk_i,
+    .arst_ni (rst_ni),
+    .strb_o  (clk_divider_strb)
+  );
 
 timing_generator timing_generator (
   .clk_i   (clk_25m),
@@ -87,7 +85,7 @@ timing_generator timing_generator (
 
   .vga_hs_o (hSYNC),
   .vga_vs_o (vSYNC),
-  .en_i (en_i),
+  .en_i (clk_divider_strb),
 
   .hd_i (HPIXEL), // Display area
   .hf_i (H_FRONT_PORCH), // Front porch
