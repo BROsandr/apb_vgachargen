@@ -128,7 +128,7 @@ module apb_vgachargen
       apb_prdata_o[7:0]  = ch_map_data2apb;
     end
 
-    apb_prdata_o = apb_prdata_o & {32{~apb_write}};
+    // apb_prdata_o = apb_prdata_o & {32{~apb_write}};
   end
 
   //////////////////////////
