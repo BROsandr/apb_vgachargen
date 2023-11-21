@@ -74,8 +74,8 @@ wire [$clog2(LINE_LIMIT)-1:0]vCount;
   clk_divider # (
     .DIVISOR (4)
   ) clk_divider (
-    .clk_i,
-    .arst_ni (rst_ni),
+    .clk_i (clk_25m),
+    .arst_ni (~rst),
     .strb_o  (clk_divider_strb)
   );
 
