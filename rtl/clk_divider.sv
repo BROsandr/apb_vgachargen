@@ -20,7 +20,7 @@ module clk_divider # (
   logic strb_ff;
   logic strb_next;
 
-  assign strb_next = strb_ff == DIVISOR;
+  assign strb_next = ~|counter_ff;
 
   always_ff @(posedge clk_i or negedge arst_ni) begin
     if   (~arst_ni) strb_ff <= '0;
