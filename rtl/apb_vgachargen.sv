@@ -121,32 +121,42 @@ module apb_vgachargen
   // APB data out         //
   //////////////////////////
 
-  assign apb_prdata_o  = !apb_write && (apb_sel_ch_t_rw ? ch_t_rw_addr_ff :
-                                        apb_sel_col_map ? col_map_addr_ff :
-                                        apb_sel_ch_map  ? ch_map_addr_ff
-                                                        : '0);
+  always_comb begin
+    if      (apb_sel_ch_t_rw) apb_prdata_o[7:0]  = ch_t_rw_data2apb;
+    else if (apb_sel_col_map) begin
+      apb_prdata_o[15:8] = col_map_data2apb;
+      apb_prdata_o[7:0]  = ch_map_data2apb;
+    end
 
+    apb_prdata_o = apb_prdata_o & {32{~apb_write}};
+  end
 
   //////////////////////////
   // APB ready            //
   //////////////////////////
 
-  logic apb_ready_next;
-  logic apb_ready_en;
-  logic apb_ready_ff;
+  logic       apb_ready_next;
+  logic       apb_ready_en;
+  logic [1:0] apb_ready_ff;
 
-  assign apb_ready_next = ( apb_psel_i & apb_penable_i ) & ~apb_ready_ff;
+  assign apb_ready_next = ( apb_psel_i & apb_penable_i ) & ~apb_ready_ff[0] & ~apb_ready_ff[1];
 
   assign apb_ready_en = (apb_psel_i & apb_penable_i)
-                      | apb_ready_ff;
+                      | apb_ready_ff[0] | apb_ready_ff[1];
 
   always_ff @(posedge clk_i or negedge rstn_i)
   if (~rstn_i)
-    apb_ready_ff <= '0;
+    apb_ready_ff[0] <= '0;
   else if (apb_ready_en)
-    apb_ready_ff <= apb_ready_next;
+    apb_ready_ff[0] <= apb_ready_next;
 
-  assign apb_pready_o  = apb_ready_ff;
+  always_ff @(posedge clk_i or negedge rstn_i)
+  if (~rstn_i)
+    apb_ready_ff[1] <= '0;
+  else
+    apb_ready_ff[1] <= apb_ready_ff[0];
+
+  assign apb_pready_o  = apb_ready_ff[1];
 
 
   //////////////////////////
@@ -160,10 +170,9 @@ module apb_vgachargen
   logic apb_err_en;
   logic apb_err_ff;
 
-  assign apb_err_next = apb_read;
+  assign apb_err_next = 1'b0;
 
-
-  assign apb_err_en = (apb_psel_i & apb_penable_i);
+  assign apb_err_en = apb_ready_ff[0];
 
   always_ff @(posedge clk_i or negedge rstn_i)
   if (~rstn_i)
