@@ -35,13 +35,16 @@ package vgachargen_pkg;
   typedef enum bit [11:0] {
     BLACK = '0,
     WHITE = '1,
-    BLUE  = 12'h00f
+    BLUE  = 12'h00f,
+    RED   = 12'hf00
   } color_t;
 
   function color_t color_decode(logic [3:0] color_encoded);
     case (color_encoded)
       4'h0   : return BLACK;
-      4'hf   : return BLUE;
+      4'ha   : return BLUE;
+      4'hb   : return RED;
+      4'hf   : return WHITE;
       default: return BLACK;
     endcase
   endfunction
