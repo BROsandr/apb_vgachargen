@@ -88,13 +88,13 @@ end
   );
 
 
-wire [CH_MAP_DATA_WIDTH-1:0]currentCharacterIndex;
+wire [CH_T_ADDR_WIDTH:0]currentCharacterIndex;
 
 true_dual_port_rw_bram
                 #
                 (
                   .INIT_FILE_NAME   ("ch_map.mem"),
-                  .DATA_WIDTH  (CH_MAP_DATA_WIDTH),
+                  .DATA_WIDTH  (CH_T_ADDR_WIDTH+1),
                   .ADDR_WIDTH ($clog2(80 * 30))
                 )
                 ch_map
