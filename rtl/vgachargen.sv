@@ -33,24 +33,45 @@ module vgachargen
   logic [VGA_MAX_H_WIDTH-1:0] hcount_pixels;
   logic [VGA_MAX_V_WIDTH-1:0] vcount_pixels;
 
-  logic [1:0] pixel_enable_delay_ff;
-  logic [1:0] pixel_enable_delay_next;
   logic       pixel_enable;
+  logic       pixel_enable_delayed;
 
-  assign pixel_enable_delay_next = {pixel_enable_delay_ff[0], pixel_enable};
+  delay #(
+    .DATA_WIDTH (1),
+    .DELAY_BY   (2)
+  ) pixel_enable_delay (
+    .clk_i,
+    .arstn_i,
+    .data_i  (pixel_enable),
+    .data_o  (pixel_enable_delayed)
+  );
 
-  always @(posedge clk_i or negedge arstn_i) begin
-    if   (!arstn_i) pixel_enable_delay_ff <= '0;
-    else            pixel_enable_delay_ff <= pixel_enable_delay_next;
-  end
+  logic vga_vs_delayed;
+  logic vga_vs;
 
-  logic [1:0] vga_hs_delay_ff;
-  logic [1:0] vga_hs_delay_next;
-  logic       vga_hs;
+  delay #(
+    .DATA_WIDTH (1),
+    .DELAY_BY   (2)
+  ) vga_vs_delay (
+    .clk_i,
+    .arstn_i,
+    .data_i  (vga_vs),
+    .data_o  (vga_vs_delayed)
+  );
 
-  logic [1:0] vga_vs_delay_ff;
-  logic [1:0] vga_vs_delay_next;
-  logic       vga_vs;
+  logic vga_hs_delayed;
+  logic vga_hs;
+
+  delay #(
+    .DATA_WIDTH (1),
+    .DELAY_BY   (2)
+  ) vga_vs_delay (
+    .clk_i,
+    .arstn_i,
+    .data_i  (vga_hs),
+    .data_o  (vga_hs_delayed)
+  );
+
 
   vga_block #(
     .CLK_FACTOR_25M (CLK_FACTOR_25M)
@@ -64,30 +85,20 @@ module vgachargen
     .vga_vs_o       (vga_vs)
   );
 
-
   logic [CH_MAP_ADDR_WIDTH-1:0] ch_map_addr_internal;
 
-  logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_ff  [2];
-  logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_next[2];
   logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr;
+  logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delayed;
 
-  assign vga_hs_delay_next = {vga_hs_delay_ff[0], vga_hs};
-  always_ff @(posedge clk_i or negedge arstn_i) begin
-    if   (!arstn_i) vga_hs_delay_ff <= '0;
-    else            vga_hs_delay_ff <= vga_hs_delay_next;
-  end
-
-  assign vga_vs_delay_next = {vga_vs_delay_ff[0], vga_vs};
-  always_ff @(posedge clk_i or negedge arstn_i) begin
-    if   (!arstn_i) vga_vs_delay_ff <= '0;
-    else            vga_vs_delay_ff <= vga_vs_delay_next;
-  end
-
-  assign bitmap_addr_delay_next = {bitmap_addr_delay_ff[0], bitmap_addr};
-  always @(posedge clk_i) begin
-    if   (!arstn_i) bitmap_addr_delay_ff <= {'0, '0};
-    else            bitmap_addr_delay_ff <= bitmap_addr_delay_next;
-  end
+  delay #(
+    .DATA_WIDTH (BITMAP_ADDR_WIDTH),
+    .DELAY_BY   (2)
+  ) vga_vs_delay (
+    .clk_i,
+    .arstn_i,
+    .data_i  (bitmap_addr),
+    .data_o  (bitmap_addr_delayed)
+  );
 
   index_generator index_generator (
     .vcount_i      (vcount_pixels),
@@ -151,14 +162,24 @@ module vgachargen
   assign                      ch_t_data_internal = ch_t_addr_internal[CH_T_ADDR_WIDTH]  ? ch_t_rw_data_internal
                                                                                         : ch_t_ro_data_internal;
 
-  logic [7:0] col_map_data_delay_next;
-  logic [7:0] col_map_data_delay_ff;
   logic [7:0] col_map_data_internal;
+  logic [7:0] col_map_data_internal_delayed;
+
+  delay #(
+    .DATA_WIDTH (8),
+    .DELAY_BY   (1)
+  ) vga_vs_delay (
+    .clk_i,
+    .arstn_i,
+    .data_i  (col_map_data_internal),
+    .data_o  (col_map_data_internal_delayed)
+  );
+
   logic [3:0] fg_col_map_data;
   logic [3:0] bg_col_map_data;
 
-  assign fg_col_map_data = col_map_data_delay_ff[7:4];
-  assign bg_col_map_data = col_map_data_delay_ff[3:0];
+  assign fg_col_map_data = col_map_data_internal_delayed[7:4];
+  assign bg_col_map_data = col_map_data_internal_delayed[3:0];
 
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME ("col_map.mem"),
@@ -173,13 +194,6 @@ module vgachargen
     .douta_o (col_map_data_o),
     .doutb_o (col_map_data_internal)
   );
-
-  assign col_map_data_delay_next = col_map_data_internal;
-
-  always_ff @(posedge clk_i or negedge arstn_i) begin
-    if   (!arstn_i) col_map_data_delay_ff <= '0;
-    else            col_map_data_delay_ff <= col_map_data_delay_next;
-  end
 
   logic   currentPixel;
   assign  currentPixel = ch_t_data_internal[bitmap_addr_delay_ff[1]];
