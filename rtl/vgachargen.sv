@@ -190,11 +190,46 @@ module vgachargen
   color_t bg_color;
   assign  bg_color = color_decode(bg_col_map_data);
 
-  assign vga_r_o = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[11:8]: bg_color[11:8]) : '0;
-  assign vga_g_o = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[7:4] : bg_color[7:4])  : '0;
-  assign vga_b_o = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[3:0] : bg_color[3:0])  : '0;
+  // register outputs
+  logic [3:0] vga_r_ff;
+  logic [3:0] vga_r_next;
+  logic [3:0] vga_g_ff;
+  logic [3:0] vga_g_next;
+  logic [3:0] vga_b_ff;
+  logic [3:0] vga_b_next;
+  logic       vga_vs_ff;
+  logic       vga_vs_next;
+  logic       vga_hs_ff;
+  logic       vga_hs_next;
 
-  assign vga_vs_o = vga_vs_delay_ff[1];
-  assign vga_hs_o = vga_hs_delay_ff[1];
+  assign vga_r_next = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[11:8]: bg_color[11:8]) : '0;
+  assign vga_g_next = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[7:4] : bg_color[7:4])  : '0;
+  assign vga_b_next = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[3:0] : bg_color[3:0])  : '0;
+
+  assign vga_vs_next = vga_vs_delay_ff[1];
+  assign vga_hs_next = vga_hs_delay_ff[1];
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if (!arstn_i) begin
+      vga_r_ff  <= '0;
+      vga_g_ff  <= '0;
+      vga_b_ff  <= '0;
+      vga_hs_ff <= '0;
+      vga_vs_ff <= '0;
+    end else begin
+      vga_r_ff  <= vga_r_next;
+      vga_g_ff  <= vga_g_next;
+      vga_b_ff  <= vga_b_next;
+      vga_hs_ff <= vga_hs_next;
+      vga_vs_ff <= vga_vs_next;
+    end
+  end
+
+  assign vga_r_o = vga_r_ff;
+  assign vga_g_o = vga_g_ff;
+  assign vga_b_o = vga_b_ff;
+
+  assign vga_hs_o = vga_hs_ff;
+  assign vga_vs_o = vga_vs_ff;
 
 endmodule
