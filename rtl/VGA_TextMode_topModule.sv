@@ -102,14 +102,13 @@ wire [$clog2(CHARACTER_SET_COUNT)-1:0]currentCharacterIndex;
 true_dual_port_bram
                 #
                 (
-                  .INIT_FILE   (CHARACTER_BUFFER_MEMLOC),
+                  .INIT_FILE_LOC   (CHARACTER_BUFFER_MEMLOC),
                   .DATA_WIDTH  ($clog2(CHARACTER_SET_COUNT)),
-                  .DEPTH_WORDS (80 * 30)
+                  .ADDR_WIDTH ($clog2(80 * 30))
                 )
                 TMtextBuffIns
                 (
-                    .clkb_i  (clk_i),
-                    .clka_i  (clk_i),
+                    .clk_i  (clk_i),
                     .addra_i (ch_map_addr_i),
                     .addrb_i (currentCharacterPixelIndex),
                     .wea_i   (ch_map_wen_i),
@@ -122,29 +121,27 @@ wire [16 * 8-1:0]currentCharacter_ch_t_ro;
 wire [16 * 8-1:0]currentCharacter_ch_t_rw;
 wire [16 * 8-1:0]currentCharacter;
 
-TextMode_characterROM
-                #
-                (
-                    .CHARACTER_SET_COUNT(CHARACTER_SET_COUNT/2),
-                    .MEMFILELOC(CHARACTER_ROM_MEMLOC)
+single_port_ro_bram #(
+                  .INIT_FILE_LOC    (CHARACTER_ROM_MEMLOC),
+                  .INIT_FILE_IS_BIN (1),
+                  .DATA_WIDTH       (128),
+                  .ADDR_WIDTH       ($clog2(CHARACTER_SET_COUNT/2))
                 )
                 ch_t_ro
                 (
-                    .clk(clk_i),
-                    .enable(1),
+                    .clk_i(clk_i),
 
-                    .chracterIndex_addressIn(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
-                    .currentCharacter_dataOut(currentCharacter_ch_t_ro)
+                    .addr_i(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
+                    .dout_o(currentCharacter_ch_t_ro)
                 );
 
   true_dual_port_bram #(
-    .INIT_FILE   (CH_T_RW_INIT_FILE),
+    .INIT_FILE_LOC   (CH_T_RW_INIT_FILE),
+    .INIT_FILE_IS_BIN   (1),
     .DATA_WIDTH  (127),
-    .DEPTH_WORDS (CHARACTER_SET_COUNT/2),
-    .BINARY_FILE (1)
+    .ADDR_WIDTH  ($clog2(CHARACTER_SET_COUNT/2))
   ) ch_t_rw (
-    .clka_i  (clk_i),
-    .clkb_i  (clk_i),
+    .clk_i  (clk_i),
     .addra_i (ch_t_rw_addr_i),
     .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
     .wea_i   (ch_t_rw_wen_i),
@@ -165,12 +162,11 @@ TextMode_characterROM
   assign bg_color = color_ff1[3:0];
 
   true_dual_port_bram #(
-    .INIT_FILE   (COL_MEMLOC),
+    .INIT_FILE_LOC   (COL_MEMLOC),
     .DATA_WIDTH  (8),
-    .DEPTH_WORDS (80 * 30)
+    .ADDR_WIDTH  ($clog2(80 * 30))
   ) col_map (
-    .clka_i  (clk_i),
-    .clkb_i   (clk_i),
+    .clk_i  (clk_i),
     .addra_i (col_map_addr_i),
     .addrb_i (currentCharacterPixelIndex),
     .wea_i   (col_map_wen_i),
