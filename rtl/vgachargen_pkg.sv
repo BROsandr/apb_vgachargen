@@ -29,6 +29,7 @@ package vgachargen_pkg;
   parameter int unsigned CH_V_WIDTH         = $clog2(CH_V_PIXELS);
   parameter int unsigned CH_H_WIDTH         = $clog2(CH_H_PIXELS);
   parameter int unsigned CH_MAP_ADDR_WIDTH  = CH_V_WIDTH + CH_H_WIDTH;
+  parameter int unsigned CH_MAP_DATA_WIDTH  = CH_T_ADDR_WIDTH + 1;
   parameter int unsigned COL_MAP_ADDR_WIDTH = CH_MAP_ADDR_WIDTH;
 
   typedef enum bit [11:0] {

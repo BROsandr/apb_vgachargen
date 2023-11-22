@@ -189,9 +189,9 @@ module apb_vgachargen
 
 
   // Instantiation
-  vgachargen_wrapper vgachargen_wrapper (
+  vgachargen vgachargen (
     .clk_i,
-    .rst_ni  (rstn_i),
+    .arstn_i  (rstn_i),
     .col_map_data_i (col_map_data2vga_ff),
     .col_map_data_o (col_map_data2apb),
     .col_map_addr_i (col_map_addr_ff),
@@ -204,11 +204,11 @@ module apb_vgachargen
     .ch_t_rw_data_o (ch_t_rw_data2apb),
     .ch_t_rw_wen_i (ch_t_rw_data2vga_en),
     .ch_t_rw_addr_i (ch_t_rw_addr_ff),
-    .R_o,
-    .G_o,
-    .B_o,
-    .hSYNC_o,
-    .vSYNC_o
+    .vga_r_o (R_o),
+    .vga_g_o (G_o),
+    .vga_b_o (B_o),
+    .vga_vs_o(vSYNC_o),
+    .vga_hs_o(hSYNC_o)
   );
 
 
