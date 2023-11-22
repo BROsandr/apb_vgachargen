@@ -1,95 +1,125 @@
+// Asynchronous reset here is needed for some FPGA boards we use
+
 module timing_generator
-  import vgachargen_pkg::*;
+# (
+    parameter N_MIXER_PIPE_STAGES = 0,
+
+              HPOS_WIDTH          = 10,
+              VPOS_WIDTH          = 10,
+
+              // Horizontal constants
+
+              H_DISPLAY           = 640,  // Horizontal display width
+              H_FRONT             =  16,  // Horizontal right border (front porch)
+              H_SYNC              =  96,  // Horizontal sync width
+              H_BACK              =  48,  // Horizontal left border (back porch)
+
+              // Vertical constants
+
+              V_DISPLAY           = 480,  // Vertical display height
+              V_BOTTOM            =  10,  // Vertical bottom border
+              V_SYNC              =   2,  // Vertical sync # lines
+              V_TOP               =  33,  // Vertical top border
+
+              CLK_MHZ             =  50,   // Clock frequency (50 or 100 MHz)
+              VGA_CLOCK           =  25   // Pixel clock of VGA in MHz
+)
 (
-  input  logic                       clk_i,
-  input  logic                       arstn_i,
-  input  logic                       en_i,
-
-  output logic                       vga_hs_o,
-  output logic                       vga_vs_o,
-
-  // Display timing counters
-  output logic [VGA_MAX_H_WIDTH-1:0] hcount_o,
-  output logic [VGA_MAX_V_WIDTH-1:0] vcount_o,
-  output logic                       pixel_enable_o
-
+    input                           clk,
+    input                           rst,
+    output logic                    hsync,
+    output logic                    vsync,
+    output logic                    display_on,
+    output logic [HPOS_WIDTH - 1:0] hpos,
+    output logic [VPOS_WIDTH - 1:0] vpos
 );
 
-  logic [VGA_MAX_H_WIDTH-1:0] hcount_ff;
-  logic hcount_en;
-  logic [VGA_MAX_H_WIDTH-1:0] hcount_next;
+    // Derived constants
 
-  logic [VGA_MAX_V_WIDTH-1:0] vcount_ff;
-  logic vcount_en;
-  logic [VGA_MAX_V_WIDTH-1:0] vcount_next;
+    localparam H_SYNC_START  = H_DISPLAY    + H_FRONT + N_MIXER_PIPE_STAGES,
+               H_SYNC_END    = H_SYNC_START + H_SYNC  - 1,
+               H_MAX         = H_SYNC_END   + H_BACK,
 
-  // Horizontal counter
-  assign hcount_next = ( hcount_ff < ( HTOTAL - 1 ) ) ? ( hcount_ff + 1 ) : ( '0 );
-  always_ff @ ( posedge clk_i or negedge arstn_i )
-    if      ( ~arstn_i  ) hcount_ff <= '0;
-    else if (en_i)        hcount_ff <= hcount_next;
+               V_SYNC_START  = V_DISPLAY    + V_BOTTOM,
+               V_SYNC_END    = V_SYNC_START + V_SYNC  - 1,
+               V_MAX         = V_SYNC_END   + V_TOP;
 
-  // Vertical counter
-  assign vcount_en   = ( hcount_ff == ( HTOTAL - 1 ) ) & en_i;
-  assign vcount_next = ( vcount_ff < ( VTOTAL - 1 ) ) ? ( vcount_ff + 1 ) : ( '0 );
-  always_ff @( posedge clk_i or negedge arstn_i )
-    if      ( ~arstn_i    ) vcount_ff <= '0;
-    else if ( vcount_en   ) vcount_ff <= vcount_next;
+    // Calculating next values of the counters
 
-  enum {
-    DISPLAY_S,
-    FRONT_S,
-    SYNC_S,
-    BACK_S
-  } hstate_ff, hstate_next,
-    vstate_ff, vstate_next;
+    logic [HPOS_WIDTH - 1:0] d_hpos;
+    logic [VPOS_WIDTH - 1:0] d_vpos;
 
-  always_ff @( posedge clk_i or negedge arstn_i )
-    if( ~arstn_i ) begin
-      hstate_ff <= DISPLAY_S;
-      vstate_ff <= DISPLAY_S;
-    end else if (en_i) begin
-      hstate_ff <= hstate_next;
-      vstate_ff <= vstate_next;
+    always_comb
+    begin
+        if (hpos == H_MAX)
+        begin
+            d_hpos = 1'd0;
+
+            if (vpos == V_MAX)
+                d_vpos = 1'd0;
+            else
+                d_vpos = vpos + 1'd1;
+        end
+        else
+        begin
+          d_hpos = hpos + 1'd1;
+          d_vpos = vpos;
+        end
     end
 
-  always_comb begin
-    hstate_next = hstate_ff;
-    unique case( hstate_ff)
-      DISPLAY_S: if( hcount_ff == HD - 1 )           hstate_next = FRONT_S;
+    // Enable to divide clock from 50 or 100 MHz to 25 MHz
 
-      FRONT_S:   if( hcount_ff == HD + HF - 1 )      hstate_next = SYNC_S;
+    logic [3:0] clk_en_cnt;
+    logic clk_en;
 
-      SYNC_S:    if( hcount_ff == HD + HF + HR - 1 ) hstate_next = BACK_S;
-
-      BACK_S:    if( hcount_ff == HTOTAL - 1 )       hstate_next = DISPLAY_S;
-
-      default:                                       hstate_next = DISPLAY_S;
-    endcase
-  end
-
-  always_comb begin
-    vstate_next = vstate_ff;
-    if( vcount_en ) begin
-      unique case( vstate_ff)
-        DISPLAY_S: if( vcount_ff == VD - 1 )           vstate_next = FRONT_S;
-
-        FRONT_S:   if( vcount_ff == VD + VF - 1 )      vstate_next = SYNC_S;
-
-        SYNC_S:    if( vcount_ff == VD + VF + VR - 1 ) vstate_next = BACK_S;
-
-        BACK_S:    if( vcount_ff == VTOTAL - 1 )       vstate_next = DISPLAY_S;
-
-        default:                                       vstate_next = DISPLAY_S;
-      endcase
+    always_ff @ (posedge clk or posedge rst)
+    begin
+        if (rst)
+        begin
+            clk_en_cnt <= 3'b0;
+            clk_en <= 1'b0;
+        end
+        else
+        begin
+            if (clk_en_cnt == (CLK_MHZ / VGA_CLOCK) - 1)
+            begin
+                clk_en_cnt <= 3'b0;
+                clk_en <= 1'b1;
+            end
+            else
+            begin
+                clk_en_cnt <= clk_en_cnt + 1;
+                clk_en <= 1'b0;
+            end
+        end
     end
-  end
 
-  assign vga_hs_o = hstate_ff inside {DISPLAY_S, FRONT_S, BACK_S};
-  assign vga_vs_o = vstate_ff inside {DISPLAY_S, FRONT_S, BACK_S};
+    // Making all outputs registered
 
-  assign pixel_enable_o = ( vstate_ff == DISPLAY_S ) && ( hstate_ff == DISPLAY_S );
+    always_ff @ (posedge clk or posedge rst)
+    begin
+        if (rst)
+        begin
+            hsync       <= 1'b0;
+            vsync       <= 1'b0;
+            display_on  <= 1'b0;
+            hpos        <= 1'b0;
+            vpos        <= 1'b0;
+        end
+        else if (clk_en)
+        begin
+            hsync       <= ~ (    d_hpos >= H_SYNC_START
+                               && d_hpos <= H_SYNC_END   );
 
-  assign hcount_o = hcount_ff;
-  assign vcount_o = vcount_ff;
+            vsync       <= ~ (    d_vpos >= V_SYNC_START
+                               && d_vpos <= V_SYNC_END   );
+
+            display_on  <=   (    d_hpos <  H_DISPLAY
+                               && d_vpos <  V_DISPLAY    );
+
+            hpos        <= d_hpos;
+            vpos        <= d_vpos;
+        end
+    end
+
 endmodule
