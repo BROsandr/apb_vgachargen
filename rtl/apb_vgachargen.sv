@@ -89,6 +89,12 @@ module apb_vgachargen
     else if (ch_map_data2vga_en) ch_map_data2vga_ff <= ch_map_data2vga_next;
   end
 
+  logic       ch_map_data2vga_en_ff;
+  always_ff @(posedge clk_i or negedge rstn_i) begin
+    if      (~rstn_i)            ch_map_data2vga_en_ff <= '0;
+    else                         ch_map_data2vga_en_ff <= ch_map_data2vga_en;
+  end
+
   logic [7:0] col_map_data2vga_ff;
   logic [7:0] col_map_data2vga_next;
   logic       col_map_data2vga_en;
@@ -99,6 +105,12 @@ module apb_vgachargen
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i)             col_map_data2vga_ff <= '0;
     else if (col_map_data2vga_en) col_map_data2vga_ff <= col_map_data2vga_next;
+  end
+
+  logic       col_map_data2vga_en_ff;
+  always_ff @(posedge clk_i or negedge rstn_i) begin
+    if      (~rstn_i)             col_map_data2vga_en_ff <= '0;
+    else                          col_map_data2vga_en_ff <= col_map_data2vga_en;
   end
 
   logic [127:0] ch_t_rw_data2vga_ff;
@@ -114,6 +126,12 @@ module apb_vgachargen
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i)             ch_t_rw_data2vga_ff <= '0;
     else if (ch_t_rw_data2vga_en) ch_t_rw_data2vga_ff <= ch_t_rw_data2vga_next;
+  end
+
+  logic         ch_t_rw_data2vga_en_ff;
+  always_ff @(posedge clk_i or negedge rstn_i) begin
+    if      (~rstn_i)             ch_t_rw_data2vga_en_ff <= '0;
+    else                          ch_t_rw_data2vga_en_ff <= ch_t_rw_data2vga_en;
   end
 
 
@@ -197,14 +215,14 @@ module apb_vgachargen
     .col_map_data_i (col_map_data2vga_ff),
     .col_map_data_o (col_map_data2apb),
     .col_map_addr_i (col_map_addr_ff),
-    .col_map_wen_i (col_map_data2vga_en),
+    .col_map_wen_i (col_map_data2vga_en_ff),
     .ch_map_data_i (ch_map_data2vga_ff),
     .ch_map_data_o (ch_map_data2apb),
     .ch_map_addr_i (ch_map_addr_ff),
-    .ch_map_wen_i (ch_map_data2vga_en),
+    .ch_map_wen_i (ch_map_data2vga_en_ff),
     .ch_t_rw_data_i (ch_t_rw_data2vga_ff),
     .ch_t_rw_data_o (ch_t_rw_data2apb),
-    .ch_t_rw_wen_i (ch_t_rw_data2vga_en),
+    .ch_t_rw_wen_i (ch_t_rw_data2vga_en_ff),
     .ch_t_rw_addr_i (ch_t_rw_addr_ff),
     .vga_r_o (R_o),
     .vga_g_o (G_o),
