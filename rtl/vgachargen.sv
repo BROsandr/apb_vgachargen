@@ -97,29 +97,25 @@ module vgachargen
   );
 
 
-wire [CH_T_ADDR_WIDTH:0]currentCharacterIndex;
+  logic [CH_T_ADDR_WIDTH:0] ch_t_addr_internal;
 
-true_dual_port_rw_bram
-                #
-                (
-                  .INIT_FILE_NAME ("ch_map.mem"),
-                  .DATA_WIDTH     (CH_T_ADDR_WIDTH+1),
-                  .ADDR_WIDTH     (CH_MAP_ADDR_WIDTH)
-                )
-                ch_map
-                (
-                    .clk_i  (clk_i),
-                    .addra_i (ch_map_addr_i),
-                    .addrb_i (ch_map_addr_internal),
-                    .wea_i   (ch_map_wen_i),
-                    .dina_i  (ch_map_data_i),
-                    .douta_o (ch_map_data_o),
-                    .doutb_o (currentCharacterIndex)
-                );
+  true_dual_port_rw_bram #(
+    .INIT_FILE_NAME ("ch_map.mem"),
+    .DATA_WIDTH     (CH_T_ADDR_WIDTH+1),
+    .ADDR_WIDTH     (CH_MAP_ADDR_WIDTH)
+  ) ch_map (
+    .clk_i   (clk_i),
+    .addra_i (ch_map_addr_i),
+    .addrb_i (ch_map_addr_internal),
+    .wea_i   (ch_map_wen_i),
+    .dina_i  (ch_map_data_i),
+    .douta_o (ch_map_data_o),
+    .doutb_o (ch_t_addr_internal)
+  );
 
-  logic [CH_T_DATA_WIDTH-1:0] currentCharacter_ch_t_ro;
-  logic [CH_T_DATA_WIDTH-1:0] currentCharacter_ch_t_rw;
-  logic [CH_T_DATA_WIDTH-1:0] currentCharacter;
+  logic [CH_T_ADDR_WIDTH-1:0] ch_t_ro_addr_internal;
+  assign                      ch_t_ro_addr_internal = ch_t_addr_internal[CH_T_ADDR_WIDTH-1:0];
+  logic [CH_T_DATA_WIDTH-1:0] ch_t_ro_data_internal;
 
   single_port_ro_bram #(
     .INIT_FILE_NAME   ("ch_t_ro.mem"),
@@ -127,11 +123,14 @@ true_dual_port_rw_bram
     .DATA_WIDTH       (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_ro (
-    .clk_i(clk_i),
-
-    .addr_i(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
-    .dout_o(currentCharacter_ch_t_ro)
+    .clk_i (clk_i),
+    .addr_i(ch_t_ro_addr_internal),
+    .dout_o(ch_t_ro_data_internal)
   );
+
+  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_internal;
+  assign                      ch_t_rw_addr_internal = ch_t_ro_addr_internal;
+  logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data_internal;
 
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   ("ch_t_rw.mem"),
@@ -141,14 +140,16 @@ true_dual_port_rw_bram
   ) ch_t_rw (
     .clk_i   (clk_i),
     .addra_i (ch_t_rw_addr_i),
-    .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
+    .addrb_i (ch_t_ro_addr_internal),
     .wea_i   (ch_t_rw_wen_i),
     .dina_i  (ch_t_rw_data_i),
     .douta_o (ch_t_rw_data_o),
-    .doutb_o (currentCharacter_ch_t_rw)
+    .doutb_o (ch_t_rw_data_internal)
   );
 
-  assign currentCharacter = currentCharacterIndex[$left(currentCharacterIndex)] ? currentCharacter_ch_t_rw : currentCharacter_ch_t_ro;
+  logic [CH_T_DATA_WIDTH-1:0] ch_t_data_internal;
+  assign                      ch_t_data_internal = ch_t_addr_internal[CH_T_ADDR_WIDTH]  ? ch_t_rw_data_internal
+                                                                                        : ch_t_ro_data_internal;
 
   logic [7:0] col_map_data_delay_next;
   logic [7:0] col_map_data_delay_ff;
@@ -181,7 +182,7 @@ true_dual_port_rw_bram
   end
 
   logic   currentPixel;
-  assign  currentPixel = currentCharacter[bitmap_addr_delay_ff[1]];
+  assign  currentPixel = ch_t_data_internal[bitmap_addr_delay_ff[1]];
 
   color_t fg_color;
   assign  fg_color = color_decode(fg_col_map_data);
