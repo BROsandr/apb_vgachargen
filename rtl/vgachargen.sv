@@ -44,10 +44,13 @@ module vgachargen
     else            pixel_enable_delay_ff <= pixel_enable_delay_next;
   end
 
-  logic [1:0] hSYNC_ff;
-  logic       hSYNC_next;
-  logic [1:0] vSYNC_ff;
-  logic       vSYNC_next;
+  logic [1:0] vga_hs_delay_ff;
+  logic [1:0] vga_hs_delay_next;
+  logic       vga_hs;
+
+  logic [1:0] vga_vs_delay_ff;
+  logic [1:0] vga_vs_delay_next;
+  logic       vga_vs;
 
   vga_block #(
     .CLK_FACTOR_25M (CLK_FACTOR_25M)
@@ -57,8 +60,8 @@ module vgachargen
     .hcount_o       (hcount_pixels),
     .vcount_o       (vcount_pixels),
     .pixel_enable_o (pixel_enable),
-    .vga_hs_o       (hSYNC_next),
-    .vga_vs_o       (vSYNC_next)
+    .vga_hs_o       (vga_hs),
+    .vga_vs_o       (vga_vs)
   );
 
 
@@ -68,14 +71,16 @@ module vgachargen
   reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_next[2];
   reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr;
 
-  always_ff @(clk_i) begin
-    if (!arstn_i) hSYNC_ff <= '0;
-    else     hSYNC_ff <= {hSYNC_ff[0], hSYNC_next};
+  assign vga_hs_delay_next = {vga_hs_delay_ff[0], vga_hs};
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (!arstn_i) vga_hs_delay_ff <= '0;
+    else            vga_hs_delay_ff <= vga_hs_delay_next;
   end
 
-  always_ff @(clk_i) begin
-    if (!arstn_i) vSYNC_ff <= '0;
-    else     vSYNC_ff <= {vSYNC_ff[0], vSYNC_next};
+  assign vga_vs_delay_next = {vga_vs_delay_ff[0], vga_vs};
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (!arstn_i) vga_vs_delay_ff <= '0;
+    else            vga_vs_delay_ff <= vga_vs_delay_next;
   end
 
   assign bitmap_addr_delay_next = {bitmap_addr_delay_ff[0], bitmap_addr};
@@ -182,7 +187,7 @@ assign vga_r_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_col
 assign vga_b_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
 assign vga_g_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
 
-  assign vga_vs_o = vSYNC_ff[1];
-  assign vga_hs_o = hSYNC_ff[1];
+  assign vga_vs_o = vga_vs_delay_ff[1];
+  assign vga_hs_o = vga_hs_delay_ff[1];
 
 endmodule
