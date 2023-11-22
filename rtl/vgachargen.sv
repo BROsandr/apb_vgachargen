@@ -23,9 +23,9 @@ module vgachargen
   // output logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_o,
   // output logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_o,
   // output logic [COL_MAP_DATA_WIDTH-1:0] col_map_data_o,
-  output logic [COL_CHAN_WIDTH-1:0]     vga_r_o,
-  output logic [COL_CHAN_WIDTH-1:0]     vga_g_o,
-  output logic [COL_CHAN_WIDTH-1:0]     vga_b_o,
+  output logic [3:0]     vga_r_o,
+  output logic [3:0]     vga_g_o,
+  output logic [3:0]     vga_b_o,
   output logic                          vga_hs_o,
   output logic                          vga_vs_o
 );
@@ -150,18 +150,18 @@ true_dual_port_rw_bram
 
   assign currentCharacter = currentCharacterIndex[$left(currentCharacterIndex)] ? currentCharacter_ch_t_rw : currentCharacter_ch_t_ro;
 
-  logic [COL_MAP_DATA_WIDTH-1:0]   color_delay_next;
-  logic [COL_MAP_DATA_WIDTH-1:0]   color_delay_ff;
-  logic [COL_MAP_DATA_WIDTH-1:0]   color;
-  logic [COL_MAP_DATA_WIDTH/2-1:0] fg_color;
-  logic [COL_MAP_DATA_WIDTH/2-1:0] bg_color;
+  logic [7:0] col_map_data_delay_next;
+  logic [7:0] col_map_data_delay_ff;
+  logic [7:0] col_map_data_internal;
+  logic [3:0] fg_col_map_data;
+  logic [3:0] bg_col_map_data;
 
-  assign fg_color = color_delay_ff[COL_MAP_DATA_WIDTH-1:COL_MAP_DATA_WIDTH/2];
-  assign bg_color = color_delay_ff[COL_MAP_DATA_WIDTH/2-1:0];
+  assign fg_col_map_data = col_map_data_delay_ff[7:4];
+  assign bg_col_map_data = col_map_data_delay_ff[3:0];
 
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME ("col_map.mem"),
-    .DATA_WIDTH     (COL_MAP_DATA_WIDTH),
+    .DATA_WIDTH     (8),
     .ADDR_WIDTH     (COL_MAP_ADDR_WIDTH)
   ) col_map (
     .clk_i   (clk_i),
@@ -170,22 +170,28 @@ true_dual_port_rw_bram
     .wea_i   (col_map_wen_i),
     .dina_i  (col_map_data_i),
     .douta_o (col_map_data_o),
-    .doutb_o (color)
+    .doutb_o (col_map_data_internal)
   );
 
-  assign color_delay_next = color;
+  assign col_map_data_delay_next = col_map_data_internal;
 
   always_ff @(posedge clk_i or negedge arstn_i) begin
-    if   (!arstn_i) color_delay_ff <= '0;
-    else            color_delay_ff <= color_delay_next;
+    if   (!arstn_i) col_map_data_delay_ff <= '0;
+    else            col_map_data_delay_ff <= col_map_data_delay_next;
   end
 
-wire   currentPixel;
-assign currentPixel = (pixel_enable_delay_ff[1] == 1) ? ~currentCharacter[bitmap_addr_delay_ff[1]] : 0;
+  logic   currentPixel;
+  assign  currentPixel = currentCharacter[bitmap_addr_delay_ff[1]];
 
-assign vga_r_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
-assign vga_b_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
-assign vga_g_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+  color_t fg_color;
+  assign  fg_color = color_decode(fg_col_map_data);
+
+  color_t bg_color;
+  assign  bg_color = color_decode(bg_col_map_data);
+
+  assign vga_r_o = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[11:8]: bg_color[11:8]) : '0;
+  assign vga_g_o = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[7:4] : bg_color[7:4])  : '0;
+  assign vga_b_o = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[3:0] : bg_color[3:0])  : '0;
 
   assign vga_vs_o = vga_vs_delay_ff[1];
   assign vga_hs_o = vga_hs_delay_ff[1];

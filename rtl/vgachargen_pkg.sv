@@ -30,7 +30,18 @@ package vgachargen_pkg;
   parameter int unsigned CH_H_WIDTH         = $clog2(CH_H_PIXELS);
   parameter int unsigned CH_MAP_ADDR_WIDTH  = CH_V_WIDTH + CH_H_WIDTH;
   parameter int unsigned COL_MAP_ADDR_WIDTH = CH_MAP_ADDR_WIDTH;
-  parameter int unsigned COL_MAP_DATA_WIDTH = 8;
 
-  parameter int unsigned COL_CHAN_WIDTH     = 4;
+  typedef enum bit [11:0] {
+    BLACK = '0,
+    WHITE = '1,
+    BLUE  = 12'h00f
+  } color_t;
+
+  function color_t color_decode(logic [3:0] color_encoded);
+    case (color_encoded)
+      4'h0   : return BLACK;
+      4'hf   : return BLUE;
+      default: return BLACK;
+    endcase
+  endfunction
 endpackage
