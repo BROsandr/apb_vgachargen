@@ -3,29 +3,29 @@
 
 module VGA_TextMode_topModule
                 (
-                    input wire clk,
-                    input wire rst,
+                    input wire clk_i,
+                    input wire arstn_i,
 
-                    input  wire [7:0]                 col_map_data_i,
-                    output wire [7:0]                 col_map_data_o,
-                    input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
-                    input  wire                       col_map_wen_i,
-                    input  wire [7:0]                 ch_map_data_i,
-                    output wire [7:0]                 ch_map_data_o,
-                    input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
-                    input  wire                       ch_map_wen_i,
-                    input  wire [127:0]               ch_t_rw_data_i,
-                    output wire [127:0]               ch_t_rw_data_o,
-                    input  wire                       ch_t_rw_wen_i,
-                    input  wire [$clog2(128)-1:0]     ch_t_rw_addr_i,
-                    input  wire                       clk_25m,
+                    // input  wire [7:0]                 col_map_data_i,
+                    // output wire [7:0]                 col_map_data_o,
+                    // input  wire [$clog2(80 * 30)-1:0] col_map_addr_i,
+                    // input  wire                       col_map_wen_i,
+                    // input  wire [7:0]                 ch_map_data_i,
+                    // output wire [7:0]                 ch_map_data_o,
+                    // input  wire [$clog2(80 * 30)-1:0] ch_map_addr_i,
+                    // input  wire                       ch_map_wen_i,
+                    // input  wire [127:0]               ch_t_rw_data_i,
+                    // output wire [127:0]               ch_t_rw_data_o,
+                    // input  wire                       ch_t_rw_wen_i,
+                    // input  wire [$clog2(128)-1:0]     ch_t_rw_addr_i,
+                    // input  wire                       clk_i,
 
-                    output wire [3:0]R, 
-                    output wire [3:0]G, 
-                    output wire [3:0]B,
+                    output wire [3:0]vga_r_o,
+                    output wire [3:0]vga_g_o,
+                    output wire [3:0]vga_b_o,
 
-                    output wire hSYNC,
-                    output wire vSYNC
+                    output wire vga_hs_o,
+                    output wire vga_vs_o
                 );
                 
                 
@@ -42,8 +42,8 @@ wire [$clog2(480)-1:0]yPixel;
 reg [1:0] pixelDrawing_ff;
 reg       pixelDrawing_next;
 
-always @(posedge clk_25m) begin
-  if (rst) pixelDrawing_ff <= '0;
+always @(posedge clk_i) begin
+  if (!arstn_i) pixelDrawing_ff <= '0;
   else     pixelDrawing_ff <= {pixelDrawing_ff[0], pixelDrawing_next};
 end
 
@@ -55,8 +55,8 @@ end
   vga_block #(
     .CLK_FACTOR_25M (4)
   ) vga_block (
-    .clk_i          (clk_25m),
-    .arstn_i        (~rst),
+    .clk_i          (clk_i),
+    .arstn_i        (arstn_i),
     .hcount_o       (xPixel),
     .vcount_o       (yPixel),
     .pixel_enable_o (pixelDrawing_next),
@@ -71,18 +71,18 @@ reg [$clog2(8 * 16)-1:0] characterXY_ff1;
 reg [$clog2(8 * 16)-1:0] characterXY_ff2;
 reg [$clog2(8 * 16)-1:0] characterXY_next;
 
-  always_ff @(clk_25m) begin
-    if (rst) hSYNC_ff <= '0;
+  always_ff @(clk_i) begin
+    if (!arstn_i) hSYNC_ff <= '0;
     else     hSYNC_ff <= {hSYNC_ff[0], hSYNC_next};
   end
 
-  always_ff @(clk_25m) begin
-    if (rst) vSYNC_ff <= '0;
+  always_ff @(clk_i) begin
+    if (!arstn_i) vSYNC_ff <= '0;
     else     vSYNC_ff <= {vSYNC_ff[0], vSYNC_next};
   end
 
-always @(posedge clk_25m) begin
-  if (rst) {characterXY_ff2, characterXY_ff1} <= '0;
+always @(posedge clk_i) begin
+  if (!arstn_i) {characterXY_ff2, characterXY_ff1} <= '0;
   else     {characterXY_ff2, characterXY_ff1} <= {characterXY_ff1, characterXY_next};
 end
 
@@ -108,8 +108,8 @@ true_dual_port_bram
                 )
                 TMtextBuffIns
                 (
-                    .clkb_i  (clk_25m),
-                    .clka_i  (clk),
+                    .clkb_i  (clk_i),
+                    .clka_i  (clk_i),
                     .addra_i (ch_map_addr_i),
                     .addrb_i (currentCharacterPixelIndex),
                     .wea_i   (ch_map_wen_i),
@@ -130,7 +130,7 @@ TextMode_characterROM
                 )
                 ch_t_ro
                 (
-                    .clk(clk_25m),
+                    .clk(clk_i),
                     .enable(1),
 
                     .chracterIndex_addressIn(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
@@ -143,8 +143,8 @@ TextMode_characterROM
     .DEPTH_WORDS (CHARACTER_SET_COUNT/2),
     .BINARY_FILE (1)
   ) ch_t_rw (
-    .clka_i  (clk),
-    .clkb_i  (clk_25m),
+    .clka_i  (clk_i),
+    .clkb_i  (clk_i),
     .addra_i (ch_t_rw_addr_i),
     .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
     .wea_i   (ch_t_rw_wen_i),
@@ -169,8 +169,8 @@ TextMode_characterROM
     .DATA_WIDTH  (8),
     .DEPTH_WORDS (80 * 30)
   ) col_map (
-    .clka_i  (clk),
-    .clkb_i   (clk_25m),
+    .clka_i  (clk_i),
+    .clkb_i   (clk_i),
     .addra_i (col_map_addr_i),
     .addrb_i (currentCharacterPixelIndex),
     .wea_i   (col_map_wen_i),
@@ -179,19 +179,19 @@ TextMode_characterROM
     .doutb_o (color_next)
   );
 
-  always_ff @(clk_25m) begin
-    if (rst) {color_ff2, color_ff1} <= '0;
+  always_ff @(clk_i) begin
+    if (!arstn_i) {color_ff2, color_ff1} <= '0;
     else     {color_ff2, color_ff1} <= {color_ff1, color_next};
   end
 
 wire   currentPixel;
 assign currentPixel = (pixelDrawing_ff[1] == 1) ? ~currentCharacter[characterXY_ff2] : 0;
 
-assign R = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
-assign B = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
-assign G = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign vga_r_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign vga_b_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign vga_g_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
 
-  assign vSYNC = vSYNC_ff[1];
-  assign hSYNC = hSYNC_ff[1];
+  assign vga_vs_o = vSYNC_ff[1];
+  assign vga_hs_o = hSYNC_ff[1];
 
 endmodule
