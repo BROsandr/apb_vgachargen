@@ -102,9 +102,9 @@ wire [CH_T_ADDR_WIDTH:0]currentCharacterIndex;
 true_dual_port_rw_bram
                 #
                 (
-                  .INIT_FILE_NAME   ("ch_map.mem"),
-                  .DATA_WIDTH  (CH_T_ADDR_WIDTH+1),
-                  .ADDR_WIDTH ($clog2(80 * 30))
+                  .INIT_FILE_NAME ("ch_map.mem"),
+                  .DATA_WIDTH     (CH_T_ADDR_WIDTH+1),
+                  .ADDR_WIDTH     (CH_MAP_ADDR_WIDTH)
                 )
                 ch_map
                 (
@@ -117,31 +117,29 @@ true_dual_port_rw_bram
                     .doutb_o (currentCharacterIndex)
                 );
 
-wire [16 * 8-1:0]currentCharacter_ch_t_ro;
-wire [16 * 8-1:0]currentCharacter_ch_t_rw;
-wire [16 * 8-1:0]currentCharacter;
+  logic [CH_T_DATA_WIDTH-1:0] currentCharacter_ch_t_ro;
+  logic [CH_T_DATA_WIDTH-1:0] currentCharacter_ch_t_rw;
+  logic [CH_T_DATA_WIDTH-1:0] currentCharacter;
 
-single_port_ro_bram #(
-                  .INIT_FILE_NAME    ("ch_t_ro.mem"),
-                  .INIT_FILE_IS_BIN (1),
-                  .DATA_WIDTH       (128),
-                  .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
-                )
-                ch_t_ro
-                (
-                    .clk_i(clk_i),
+  single_port_ro_bram #(
+    .INIT_FILE_NAME   ("ch_t_ro.mem"),
+    .INIT_FILE_IS_BIN (1),
+    .DATA_WIDTH       (CH_T_DATA_WIDTH),
+    .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
+  ) ch_t_ro (
+    .clk_i(clk_i),
 
-                    .addr_i(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
-                    .dout_o(currentCharacter_ch_t_ro)
-                );
+    .addr_i(currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
+    .dout_o(currentCharacter_ch_t_ro)
+  );
 
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   ("ch_t_rw.mem"),
-    .INIT_FILE_IS_BIN   (1),
-    .DATA_WIDTH  (127),
-    .ADDR_WIDTH  (CH_T_ADDR_WIDTH)
+    .INIT_FILE_IS_BIN (1),
+    .DATA_WIDTH       (CH_T_DATA_WIDTH),
+    .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_rw (
-    .clk_i  (clk_i),
+    .clk_i   (clk_i),
     .addra_i (ch_t_rw_addr_i),
     .addrb_i (currentCharacterIndex[$left(currentCharacterIndex)-1:0]),
     .wea_i   (ch_t_rw_wen_i),
@@ -152,21 +150,21 @@ single_port_ro_bram #(
 
   assign currentCharacter = currentCharacterIndex[$left(currentCharacterIndex)] ? currentCharacter_ch_t_rw : currentCharacter_ch_t_ro;
 
-  logic [7:0] color_delay_next;
-  logic [7:0] color_delay_ff;
-  logic [7:0] color;
-  logic [3:0] fg_color;
-  logic [3:0] bg_color;
+  logic [COL_MAP_DATA_WIDTH-1:0]   color_delay_next;
+  logic [COL_MAP_DATA_WIDTH-1:0]   color_delay_ff;
+  logic [COL_MAP_DATA_WIDTH-1:0]   color;
+  logic [COL_MAP_DATA_WIDTH/2-1:0] fg_color;
+  logic [COL_MAP_DATA_WIDTH/2-1:0] bg_color;
 
-  assign fg_color = color_delay_ff[7:4];
-  assign bg_color = color_delay_ff[3:0];
+  assign fg_color = color_delay_ff[COL_MAP_DATA_WIDTH-1:COL_MAP_DATA_WIDTH/2];
+  assign bg_color = color_delay_ff[COL_MAP_DATA_WIDTH/2-1:0];
 
   true_dual_port_rw_bram #(
-    .INIT_FILE_NAME   ("col_map.mem"),
-    .DATA_WIDTH  (8),
-    .ADDR_WIDTH  ($clog2(80 * 30))
+    .INIT_FILE_NAME ("col_map.mem"),
+    .DATA_WIDTH     (COL_MAP_DATA_WIDTH),
+    .ADDR_WIDTH     (COL_MAP_ADDR_WIDTH)
   ) col_map (
-    .clk_i  (clk_i),
+    .clk_i   (clk_i),
     .addra_i (col_map_addr_i),
     .addrb_i (ch_map_addr_internal),
     .wea_i   (col_map_wen_i),
