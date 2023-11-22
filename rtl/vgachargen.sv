@@ -33,13 +33,16 @@ module vgachargen
   logic [VGA_MAX_H_WIDTH-1:0] hcount_pixels;
   logic [VGA_MAX_V_WIDTH-1:0] vcount_pixels;
 
-  reg [1:0] pixelDrawing_ff;
-  reg       pixelDrawing_next;
+  logic [1:0] pixel_enable_delay_ff;
+  logic [1:0] pixel_enable_delay_next;
+  logic       pixel_enable;
 
-always @(posedge clk_i) begin
-  if (!arstn_i) pixelDrawing_ff <= '0;
-  else     pixelDrawing_ff <= {pixelDrawing_ff[0], pixelDrawing_next};
-end
+  assign pixel_enable_delay_next = {pixel_enable_delay_ff[0], pixel_enable};
+
+  always @(posedge clk_i or negedge arstn_i) begin
+    if   (!arstn_i) pixel_enable_delay_ff <= '0;
+    else            pixel_enable_delay_ff <= pixel_enable_delay_next;
+  end
 
   logic [1:0] hSYNC_ff;
   logic       hSYNC_next;
@@ -53,7 +56,7 @@ end
     .arstn_i        (arstn_i),
     .hcount_o       (hcount_pixels),
     .vcount_o       (vcount_pixels),
-    .pixel_enable_o (pixelDrawing_next),
+    .pixel_enable_o (pixel_enable),
     .vga_hs_o       (hSYNC_next),
     .vga_vs_o       (vSYNC_next)
   );
@@ -173,11 +176,11 @@ single_port_ro_bram #(
   end
 
 wire   currentPixel;
-assign currentPixel = (pixelDrawing_ff[1] == 1) ? ~currentCharacter[bitmap_addr_delay_ff[1]] : 0;
+assign currentPixel = (pixel_enable_delay_ff[1] == 1) ? ~currentCharacter[bitmap_addr_delay_ff[1]] : 0;
 
-assign vga_r_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
-assign vga_b_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
-assign vga_g_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign vga_r_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign vga_b_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
+assign vga_g_o = pixel_enable_delay_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
 
   assign vga_vs_o = vSYNC_ff[1];
   assign vga_hs_o = hSYNC_ff[1];
