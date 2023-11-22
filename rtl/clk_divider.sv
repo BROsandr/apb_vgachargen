@@ -10,7 +10,7 @@ module clk_divider # (
   logic [COUNTER_WIDTH-1:0] counter_next;
   logic [COUNTER_WIDTH-1:0] counter_ff;
 
-  assign counter_next = (counter_ff < DIVISOR) ? (counter_ff + COUNTER_WIDTH'(1)) : '0;
+  assign counter_next = ~|counter_ff ? COUNTER_WIDTH'(DIVISOR - 1) : (counter_ff - COUNTER_WIDTH'(1));
 
   always_ff @(posedge clk_i or negedge arstn_i) begin
     if   (~arstn_i) counter_ff <= '0;
