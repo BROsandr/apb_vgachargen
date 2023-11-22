@@ -189,7 +189,9 @@ module apb_vgachargen
 
 
   // Instantiation
-  vgachargen vgachargen (
+  vgachargen #(
+    .CLK_FACTOR_25M  (50 / 25)
+  ) vgachargen (
     .clk_i,
     .arstn_i  (rstn_i),
     .col_map_data_i (col_map_data2vga_ff),
