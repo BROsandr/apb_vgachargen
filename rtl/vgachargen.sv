@@ -65,7 +65,7 @@ module vgachargen
   delay #(
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
-  ) vga_vs_delay (
+  ) vga_hs_delay (
     .clk_i,
     .arstn_i,
     .data_i  (vga_hs),
@@ -93,7 +93,7 @@ module vgachargen
   delay #(
     .DATA_WIDTH (BITMAP_ADDR_WIDTH),
     .DELAY_BY   (2)
-  ) vga_vs_delay (
+  ) bitmap_delay (
     .clk_i,
     .arstn_i,
     .data_i  (bitmap_addr),
@@ -151,7 +151,7 @@ module vgachargen
   ) ch_t_rw (
     .clk_i   (clk_i),
     .addra_i (ch_t_rw_addr_i),
-    .addrb_i (ch_t_ro_addr_internal),
+    .addrb_i (ch_t_rw_addr_internal),
     .wea_i   (ch_t_rw_wen_i),
     .dina_i  (ch_t_rw_data_i),
     .douta_o (ch_t_rw_data_o),
@@ -168,7 +168,7 @@ module vgachargen
   delay #(
     .DATA_WIDTH (8),
     .DELAY_BY   (1)
-  ) vga_vs_delay (
+  ) col_map_data_delay (
     .clk_i,
     .arstn_i,
     .data_i  (col_map_data_internal),
@@ -196,7 +196,7 @@ module vgachargen
   );
 
   logic   currentPixel;
-  assign  currentPixel = ch_t_data_internal[bitmap_addr_delay_ff[1]];
+  assign  currentPixel = ch_t_data_internal[bitmap_addr_delayed];
 
   color_t fg_color;
   assign  fg_color = color_decode(fg_col_map_data);
@@ -216,12 +216,12 @@ module vgachargen
   logic       vga_hs_ff;
   logic       vga_hs_next;
 
-  assign vga_r_next = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[11:8]: bg_color[11:8]) : '0;
-  assign vga_g_next = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[7:4] : bg_color[7:4])  : '0;
-  assign vga_b_next = pixel_enable_delay_ff[1] ? (currentPixel ? fg_color[3:0] : bg_color[3:0])  : '0;
+  assign vga_r_next = pixel_enable_delayed ? (currentPixel ? fg_color[11:8]: bg_color[11:8]) : '0;
+  assign vga_g_next = pixel_enable_delayed ? (currentPixel ? fg_color[7:4] : bg_color[7:4])  : '0;
+  assign vga_b_next = pixel_enable_delayed ? (currentPixel ? fg_color[3:0] : bg_color[3:0])  : '0;
 
-  assign vga_vs_next = vga_vs_delay_ff[1];
-  assign vga_hs_next = vga_hs_delay_ff[1];
+  assign vga_vs_next = vga_vs_delayed;
+  assign vga_hs_next = vga_hs_delayed;
 
   always_ff @(posedge clk_i or negedge arstn_i) begin
     if (!arstn_i) begin

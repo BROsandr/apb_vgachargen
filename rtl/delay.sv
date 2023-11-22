@@ -10,7 +10,13 @@ module delay #(
   logic [DELAY_BY-1:0][DATA_WIDTH-1:0] data_ff  ;
   logic [DELAY_BY-1:0][DATA_WIDTH-1:0] data_next;
 
-  assign data_next = {data_ff[0:DELAY_BY-2], data_i};
+  if   (DELAY_BY == 1) begin
+    assign data_next = data_i;
+    assign data_o    = data_ff;
+  end else begin
+    assign data_next = {data_ff[DELAY_BY-2:0], data_i};
+    assign data_o    = data_ff[DELAY_BY-1];
+  end
 
   always_ff @(posedge clk_i or negedge arstn_i) begin
     if (!arstn_i) data_ff <= '0;
