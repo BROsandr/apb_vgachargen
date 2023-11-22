@@ -21,7 +21,8 @@ package vgachargen_pkg;
   parameter int unsigned BITMAP_V_WIDTH    = $clog2(BITMAP_V_PIXELS);
   parameter int unsigned CH_T_DATA_WIDTH   = BITMAP_H_PIXELS * BITMAP_V_PIXELS;
   parameter int unsigned BITMAP_ADDR_WIDTH = $clog2(CH_T_DATA_WIDTH);
-  parameter int unsigned CH_T_ADDR_WIDTH   = $clog2(127);
+  parameter int unsigned CHARSET_COUNT     = 256;
+  parameter int unsigned CH_T_ADDR_WIDTH   = $clog2(CHARSET_COUNT/2);
 
   parameter int unsigned CH_H_PIXELS        = HD / BITMAP_H_PIXELS;
   parameter int unsigned CH_V_PIXELS        = VD / BITMAP_V_PIXELS;
@@ -31,4 +32,6 @@ package vgachargen_pkg;
   parameter int unsigned CH_MAP_DATA_WIDTH  = 8;
   parameter int unsigned COL_MAP_ADDR_WIDTH = CH_MAP_ADDR_WIDTH;
   parameter int unsigned COL_MAP_DATA_WIDTH = CH_MAP_DATA_WIDTH;
+
+  parameter int unsigned COL_CHAN_WIDTH     = 4;
 endpackage
