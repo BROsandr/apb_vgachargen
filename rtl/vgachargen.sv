@@ -61,9 +61,9 @@ end
 
   logic [CH_MAP_ADDR_WIDTH-1:0] ch_map_addr_internal;
 
-  reg [$clog2(8 * 16)-1:0] characterXY_ff1;
-  reg [$clog2(8 * 16)-1:0] characterXY_ff2;
-  reg [$clog2(8 * 16)-1:0] characterXY_next;
+  reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_ff  [2];
+  reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_next[2];
+  reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr;
 
   always_ff @(clk_i) begin
     if (!arstn_i) hSYNC_ff <= '0;
@@ -75,16 +75,17 @@ end
     else     vSYNC_ff <= {vSYNC_ff[0], vSYNC_next};
   end
 
-always @(posedge clk_i) begin
-  if (!arstn_i) {characterXY_ff2, characterXY_ff1} <= '0;
-  else     {characterXY_ff2, characterXY_ff1} <= {characterXY_ff1, characterXY_next};
-end
+  assign bitmap_addr_delay_next = {bitmap_addr_delay_ff[0], bitmap_addr};
+  always @(posedge clk_i) begin
+    if   (!arstn_i) bitmap_addr_delay_ff <= {'0, '0};
+    else            bitmap_addr_delay_ff <= bitmap_addr_delay_next;
+  end
 
   index_generator index_generator (
     .vcount_i      (vcount_pixels),
     .hcount_i      (hcount_pixels),
     .ch_map_addr_o (ch_map_addr_internal),
-    .bitmap_addr_o (characterXY_next)
+    .bitmap_addr_o (bitmap_addr)
   );
 
 
@@ -172,7 +173,7 @@ single_port_ro_bram #(
   end
 
 wire   currentPixel;
-assign currentPixel = (pixelDrawing_ff[1] == 1) ? ~currentCharacter[characterXY_ff2] : 0;
+assign currentPixel = (pixelDrawing_ff[1] == 1) ? ~currentCharacter[bitmap_addr_delay_ff[1]] : 0;
 
 assign vga_r_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
 assign vga_b_o = pixelDrawing_ff[1] ? (~((currentPixel) ? fg_color: bg_color)) : '0;
