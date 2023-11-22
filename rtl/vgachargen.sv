@@ -67,9 +67,9 @@ module vgachargen
 
   logic [CH_MAP_ADDR_WIDTH-1:0] ch_map_addr_internal;
 
-  reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_ff  [2];
-  reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_next[2];
-  reg [BITMAP_ADDR_WIDTH-1:0] bitmap_addr;
+  logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_ff  [2];
+  logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_delay_next[2];
+  logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr;
 
   assign vga_hs_delay_next = {vga_hs_delay_ff[0], vga_hs};
   always_ff @(posedge clk_i or negedge arstn_i) begin
@@ -152,14 +152,14 @@ single_port_ro_bram #(
 
   assign currentCharacter = currentCharacterIndex[$left(currentCharacterIndex)] ? currentCharacter_ch_t_rw : currentCharacter_ch_t_ro;
 
-  logic [7:0]      color_next;
-  logic [7:0] color_ff1;
-  logic [7:0] color_ff2;
+  logic [7:0] color_delay_next;
+  logic [7:0] color_delay_ff;
+  logic [7:0] color;
   logic [3:0] fg_color;
   logic [3:0] bg_color;
 
-  assign fg_color = color_ff1[7:4];
-  assign bg_color = color_ff1[3:0];
+  assign fg_color = color_delay_ff[7:4];
+  assign bg_color = color_delay_ff[3:0];
 
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   ("col_map.mem"),
@@ -172,12 +172,14 @@ single_port_ro_bram #(
     .wea_i   (col_map_wen_i),
     .dina_i  (col_map_data_i),
     .douta_o (col_map_data_o),
-    .doutb_o (color_next)
+    .doutb_o (color)
   );
 
-  always_ff @(clk_i) begin
-    if (!arstn_i) {color_ff2, color_ff1} <= '0;
-    else     {color_ff2, color_ff1} <= {color_ff1, color_next};
+  assign color_delay_next = color;
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (!arstn_i) color_delay_ff <= '0;
+    else            color_delay_ff <= color_delay_next;
   end
 
 wire   currentPixel;
