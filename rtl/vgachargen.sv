@@ -90,7 +90,7 @@ end
 
 wire [CH_MAP_DATA_WIDTH-1:0]currentCharacterIndex;
 
-true_dual_port_bram
+true_dual_port_rw_bram
                 #
                 (
                   .INIT_FILE_NAME   ("ch_map.mem"),
@@ -126,7 +126,7 @@ single_port_ro_bram #(
                     .dout_o(currentCharacter_ch_t_ro)
                 );
 
-  true_dual_port_bram #(
+  true_dual_port_rw_bram #(
     .INIT_FILE_NAME   ("ch_t_rw.mem"),
     .INIT_FILE_IS_BIN   (1),
     .DATA_WIDTH  (127),
@@ -152,7 +152,7 @@ single_port_ro_bram #(
   assign fg_color = color_ff1[7:4];
   assign bg_color = color_ff1[3:0];
 
-  true_dual_port_bram #(
+  true_dual_port_rw_bram #(
     .INIT_FILE_NAME   ("col_map.mem"),
     .DATA_WIDTH  (8),
     .ADDR_WIDTH  ($clog2(80 * 30))

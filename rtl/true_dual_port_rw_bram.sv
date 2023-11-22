@@ -1,4 +1,4 @@
-module true_dual_port_bram #(
+module true_dual_port_rw_bram #(
   parameter               INIT_FILE_NAME   = "",
   parameter               INIT_FILE_IS_BIN = 0,
   parameter  int unsigned DATA_WIDTH       = 2,
