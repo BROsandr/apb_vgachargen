@@ -5,7 +5,7 @@ module clk_divider # (
   input  logic                       arstn_i,
   output logic                       strb_o
 );
-  localparam int unsigned COUNTER_WIDTH = $clog2(DIVISOR);
+  localparam int unsigned COUNTER_WIDTH = (DIVISOR > 1) ? $clog2(DIVISOR) : 1;
 
   logic [COUNTER_WIDTH-1:0] counter_next;
   logic [COUNTER_WIDTH-1:0] counter_ff;
