@@ -2,6 +2,7 @@
 
 
 module VGA_TextMode_topModule
+  import vgachargen_pkg::*;
                 (
                     input wire clk_i,
                     input wire arstn_i,
@@ -36,8 +37,8 @@ localparam CH_T_RW_INIT_FILE = "ch_t_rw.mem";
 localparam CHARACTER_BUFFER_MEMLOC = "characterBuffer80x60.mem";
 localparam COL_MEMLOC = "cols.mem";
 
-wire [$clog2(640)-1:0]xPixel;
-wire [$clog2(480)-1:0]yPixel;
+wire [VGA_MAX_H_WIDTH-1:0]xPixel;
+wire [VGA_MAX_V_WIDTH-1:0]yPixel;
 
 reg [1:0] pixelDrawing_ff;
 reg       pixelDrawing_next;
@@ -86,15 +87,12 @@ always @(posedge clk_i) begin
   else     {characterXY_ff2, characterXY_ff1} <= {characterXY_ff1, characterXY_next};
 end
 
-TextMode_indexGenerator TMindexGenIns
-                (
-                    .xPixel(xPixel),
-                    .yPixel(yPixel),
-
-                    .currentCharacterPixelIndex(currentCharacterPixelIndex),
-                    .characterXY(characterXY_next)
-                );
-
+  index_generator index_generator (
+    .vcount_i      (yPixel),
+    .hcount_i      (xPixel),
+    .ch_map_addr_o (currentCharacterPixelIndex),
+    .bitmap_addr_o (characterXY_next)
+  );
 
 
 wire [$clog2(CHARACTER_SET_COUNT)-1:0]currentCharacterIndex;
