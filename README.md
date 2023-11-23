@@ -9,5 +9,5 @@
 
 ## TODO
 
--   Put clk_divider in the top file and apply en to all registers in the module. This would save
+-   Put `clk_divider` in the top file and apply `en_i` to vga connected registers in the module. This would save
     power.
