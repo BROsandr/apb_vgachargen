@@ -140,6 +140,8 @@ module apb_vgachargen
   //////////////////////////
 
   always_comb begin
+    apb_prdata_o = '0;
+  
     if      (apb_sel_ch_t_rw) apb_prdata_o[7:0]  = ch_t_rw_data2apb;
     else if (apb_sel_col_map) begin
       apb_prdata_o[15:8] = col_map_data2apb;
