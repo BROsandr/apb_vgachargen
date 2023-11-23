@@ -7,15 +7,17 @@ module vgachargen
   parameter              CH_MAP_INIT_FILE_NAME  = "ch_map.mem",
   parameter              COL_MAP_INIT_FILE_NAME = "col_map.mem"
 ) (
-  input logic clk_i,
-  input logic arstn_i,
+  input  logic                          clk_i,
+  input  logic                          arstn_i,
 
   input  logic [7:0]                    col_map_data_i,
   input  logic [COL_MAP_ADDR_WIDTH-1:0] col_map_addr_i,
   input  logic                          col_map_wen_i,
+
   input  logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_i,
   input  logic [CH_MAP_ADDR_WIDTH-1:0]  ch_map_addr_i,
   input  logic                          ch_map_wen_i,
+
   input  logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_i,
   input  logic                          ch_t_rw_wen_i,
   input  logic [CH_T_ADDR_WIDTH-1:0]    ch_t_rw_addr_i,
@@ -23,9 +25,10 @@ module vgachargen
   output logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_o,
   output logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_o,
   output logic [7:0]                    col_map_data_o,
-  output logic [3:0]     vga_r_o,
-  output logic [3:0]     vga_g_o,
-  output logic [3:0]     vga_b_o,
+
+  output logic [3:0]                    vga_r_o,
+  output logic [3:0]                    vga_g_o,
+  output logic [3:0]                    vga_b_o,
   output logic                          vga_hs_o,
   output logic                          vga_vs_o
 );
