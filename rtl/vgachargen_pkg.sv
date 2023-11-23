@@ -40,7 +40,7 @@ package vgachargen_pkg;
     GREEN = 12'h0f0
   } color_t;
 
-  function color_t color_decode(logic [3:0] color_encoded);
+  function automatic color_t color_decode(logic [3:0] color_encoded);
     case (color_encoded)
       4'h0   : return BLACK;
       4'ha   : return BLUE;
