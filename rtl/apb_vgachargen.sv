@@ -62,9 +62,11 @@ module apb_vgachargen
     if      (~rstn_i) col_map_addr_ff <= '0;
     else              col_map_addr_ff <= col_map_addr_next;
   end
+  
+  import vgachargen_pkg::*;
 
-  logic [$clog2(80 * 30)-1:0] ch_t_rw_addr_ff;
-  logic [$clog2(80 * 30)-1:0] ch_t_rw_addr_next;
+  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_ff;
+  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_next;
 
   assign ch_t_rw_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
 
