@@ -85,11 +85,139 @@ module timing_generator
     end
   end
 
-  assign vga_hs_o = hstate_ff inside {DISPLAY_S, FRONT_S, BACK_S};
-  assign vga_vs_o = vstate_ff inside {DISPLAY_S, FRONT_S, BACK_S};
+  logic vga_vs_ff;
+  logic vga_vs_next;
 
-  assign pixel_enable_o = ( vstate_ff == DISPLAY_S ) && ( hstate_ff == DISPLAY_S );
+  assign vga_vs_next = vstate_next inside {DISPLAY_S, FRONT_S, BACK_S};
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if      (!arstn_i) vga_vs_ff <= 1'b1;
+    else if (en_i)     vga_vs_ff <= vga_vs_next;
+  end
+
+  logic vga_hs_ff;
+  logic vga_hs_next;
+
+  assign vga_hs_next = hstate_next inside {DISPLAY_S, FRONT_S, BACK_S};
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if      (!arstn_i) vga_hs_ff <= 1'b1;
+    else if (en_i)     vga_hs_ff <= vga_hs_next;
+  end
+
+  logic pixel_enable_ff;
+  logic pixel_enable_next;
+
+  assign pixel_enable_next = ( vstate_next == DISPLAY_S ) && ( hstate_next == DISPLAY_S );
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (!arstn_i) pixel_enable_ff <= 1'b0;
+    else if (en_i)  pixel_enable_ff <= pixel_enable_next;
+  end
+
+  assign vga_hs_o = vga_hs_ff;
+  assign vga_vs_o = vga_vs_ff;
+
+  assign pixel_enable_o = pixel_enable_ff;
 
   assign hcount_o = hcount_ff;
   assign vcount_o = vcount_ff;
+
+// X Checks
+  sva_x_check_count: assert property(
+    @(posedge clk_i)
+    !$isunknown({hcount_o, vcount_o})
+  ) else begin
+    $fatal("sva:count is unknown");
+  end
+
+  sva_x_check_pixel_enable: assert property(
+    @(posedge clk_i)
+    !$isunknown(pixel_enable_o)
+  ) else begin
+    $fatal("sva:pixel_enable is unknown");
+  end
+
+// Behavioral
+  sva_x_check_hd_is_greater: assert property(
+    @(posedge clk_i)
+    HD > HF && HD > HR && HD > HB
+  ) else begin
+    $fatal("sva:hd_i is lesser or equal than hf_i || hr_i || hb_i");
+  end
+  
+  sva_x_check_vd_is_greater: assert property(
+    @(posedge clk_i)
+    VD > VF && VD > VR && VD > VB
+  ) else begin
+    $fatal("sva:vd_i is lesser or equal than vf_i || vr_i || vb_i");
+  end
+
+  localparam                     VGA_MAX_WIDTH_FLAT = VGA_MAX_H_WIDTH*VGA_MAX_V_WIDTH;
+  logic [VGA_MAX_WIDTH_FLAT-1:0] pixel_counter_ff;
+  logic                          pixel_counter_en;
+  assign                         pixel_counter_en   = (!vga_vs_o || pixel_enable_o);
+  logic [VGA_MAX_WIDTH_FLAT-1:0] pixel_counter_next;
+  assign                         pixel_counter_next = (!vga_vs_o) ?
+                                                      ('0)        :
+                                                      (pixel_counter_ff + VGA_MAX_WIDTH_FLAT'(1));
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if      (!arstn_i)         pixel_counter_ff <= '0;
+    else if (pixel_counter_en) pixel_counter_ff <= pixel_counter_next;
+  end
+  sva_pixel_enable_eq_hd_vd: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    $fell(vga_vs_o) |-> pixel_counter_ff == HD * VD
+  ) else begin
+    $fatal("sva:pixel_enable==1 total time != HD * VD");
+  end
+
+  sva_vcount_change_on_hcount_reset: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    !$stable(vcount_o) |-> ~|hcount_ff && ($past(hcount_o) == (HTOTAL - VGA_MAX_H_WIDTH'(1)))
+  ) else begin
+    $fatal("sva:vcount changed but hcount was not reseted");
+  end
+
+  sva_vcount_fell_on_timing: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    $fell(vga_vs_o) |-> vcount_o == (VD + VF)
+  ) else begin
+    $fatal("sva:vs pulse not on display_time + front_porch_time");
+  end
+
+  sva_vcount_rose_on_timing: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    $rose(vga_vs_o) |-> vcount_o == (VTOTAL - VB)
+  ) else begin
+    $fatal("sva:vs pulse not on display_time + front_porch_time + sync_pulse");
+  end
+
+  sva_hcount_fell_on_timing: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    $fell(vga_hs_o) |-> hcount_o == (HD + HF)
+  ) else begin
+    $fatal("sva:hs pulse not on display_time + front_porch_time");
+  end
+
+  sva_hcount_rose_on_timing: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    $rose(vga_hs_o) |-> hcount_o == (HTOTAL - HB)
+  ) else begin
+    $fatal("sva:hs pulse not on display_time + front_porch_time + sync_pulse");
+  end
+
+  sva_enable_inside_display: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    pixel_enable_o |-> (vcount_o inside {[0:VD]}) && (hcount_o inside {[0:HD]})
+  ) else begin
+    $fatal("sva:pixel_enable_o==1 outside the display area");
+  end
+
+  sva_enable_outside_pulse: assert property(
+    @(posedge clk_i) disable iff (!arstn_i)
+    pixel_enable_o |-> vga_hs_o && vga_vs_o
+  ) else begin
+    $fatal("sva:pixel_enable_o==1 inside the pulse");
+  end
 endmodule
