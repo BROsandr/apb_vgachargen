@@ -7,8 +7,10 @@ module vgachargen
   parameter              CH_MAP_INIT_FILE_NAME  = "ch_map.mem",
   parameter              COL_MAP_INIT_FILE_NAME = "col_map.mem"
 ) (
-  input  logic                          clk_i,
-  input  logic                          arstn_i,
+  input  logic                          sys_clk_i,
+  input  logic                          factor_clk_i,
+  input  logic                          sys_arstn_i,
+  input  logic                          factor_arstn_i,
 
   input  logic [7:0]                    col_map_data_i,
   input  logic [COL_MAP_ADDR_WIDTH-1:0] col_map_addr_i,
@@ -43,8 +45,8 @@ module vgachargen
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
   ) pixel_enable_delay (
-    .clk_i,
-    .arstn_i,
+    .clk_i   (factor_clk_i),
+    .arstn_i (factor_arstn_i),
     .data_i  (pixel_enable),
     .data_o  (pixel_enable_delayed)
   );
@@ -56,8 +58,8 @@ module vgachargen
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
   ) vga_vs_delay (
-    .clk_i,
-    .arstn_i,
+    .clk_i   (factor_clk_i),
+    .arstn_i (factor_arstn_i),
     .data_i  (vga_vs),
     .data_o  (vga_vs_delayed)
   );
@@ -69,8 +71,8 @@ module vgachargen
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
   ) vga_hs_delay (
-    .clk_i,
-    .arstn_i,
+    .clk_i   (factor_clk_i),
+    .arstn_i (factor_arstn_i),
     .data_i  (vga_hs),
     .data_o  (vga_hs_delayed)
   );
@@ -79,8 +81,8 @@ module vgachargen
   vga_block #(
     .CLK_FACTOR_25M (CLK_FACTOR_25M)
   ) vga_block (
-    .clk_i          (clk_i),
-    .arstn_i        (arstn_i),
+    .clk_i          (factor_clk_i),
+    .arstn_i        (factor_arstn_i),
     .hcount_o       (hcount_pixels),
     .vcount_o       (vcount_pixels),
     .pixel_enable_o (pixel_enable),
@@ -97,8 +99,8 @@ module vgachargen
     .DATA_WIDTH (BITMAP_ADDR_WIDTH),
     .DELAY_BY   (2)
   ) bitmap_delay (
-    .clk_i,
-    .arstn_i,
+    .clk_i   (factor_clk_i),
+    .arstn_i (factor_arstn_i),
     .data_i  (bitmap_addr),
     .data_o  (bitmap_addr_delayed)
   );
@@ -118,7 +120,8 @@ module vgachargen
     .DATA_WIDTH     (CH_T_ADDR_WIDTH+1),
     .ADDR_WIDTH     (CH_MAP_ADDR_WIDTH)
   ) ch_map (
-    .clk_i   (clk_i),
+    .clka_i  (sys_clk_i),
+    .clkb_i  (factor_clk_i),
     .addra_i (ch_map_addr_i),
     .addrb_i (ch_map_addr_internal),
     .wea_i   (ch_map_wen_i),
@@ -137,7 +140,7 @@ module vgachargen
     .DATA_WIDTH       (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_ro (
-    .clk_i (clk_i),
+    .clk_i (factor_clk_i),
     .addr_i(ch_t_ro_addr_internal),
     .dout_o(ch_t_ro_data_internal)
   );
@@ -152,7 +155,8 @@ module vgachargen
     .DATA_WIDTH       (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_rw (
-    .clk_i   (clk_i),
+    .clka_i  (sys_clk_i),
+    .clkb_i  (factor_clk_i),
     .addra_i (ch_t_rw_addr_i),
     .addrb_i (ch_t_rw_addr_internal),
     .wea_i   (ch_t_rw_wen_i),
@@ -172,8 +176,8 @@ module vgachargen
     .DATA_WIDTH (8),
     .DELAY_BY   (1)
   ) col_map_data_delay (
-    .clk_i,
-    .arstn_i,
+    .clk_i   (factor_clk_i),
+    .arstn_i (factor_arstn_i),
     .data_i  (col_map_data_internal),
     .data_o  (col_map_data_internal_delayed)
   );
@@ -189,7 +193,8 @@ module vgachargen
     .DATA_WIDTH     (8),
     .ADDR_WIDTH     (COL_MAP_ADDR_WIDTH)
   ) col_map (
-    .clk_i   (clk_i),
+    .clka_i  (sys_clk_i),
+    .clkb_i  (factor_clk_i),
     .addra_i (col_map_addr_i),
     .addrb_i (ch_map_addr_internal),
     .wea_i   (col_map_wen_i),
@@ -226,8 +231,8 @@ module vgachargen
   assign vga_vs_next = vga_vs_delayed;
   assign vga_hs_next = vga_hs_delayed;
 
-  always_ff @(posedge clk_i or negedge arstn_i) begin
-    if (!arstn_i) begin
+  always_ff @(posedge factor_clk_i or negedge factor_arstn_i) begin
+    if (!factor_arstn_i) begin
       vga_r_ff  <= '0;
       vga_g_ff  <= '0;
       vga_b_ff  <= '0;

@@ -5,7 +5,8 @@ module true_dual_port_rw_bram #(
   parameter  int unsigned ADDR_WIDTH       = 4,
   localparam int unsigned DEPTH_WORDS      = 2 ** ADDR_WIDTH
 ) (
-  input  logic                  clk_i,
+  input  logic                  clka_i,
+  input  logic                  clkb_i,
   input  logic [ADDR_WIDTH-1:0] addra_i,
   input  logic [ADDR_WIDTH-1:0] addrb_i,
   input  logic                  wea_i,
@@ -24,15 +25,15 @@ module true_dual_port_rw_bram #(
     end
   end
 
-  always_ff @(posedge clk_i) begin
+  always_ff @(posedge clka_i) begin
     if (wea_i) mem[addra_i] <= dina_i;
   end
 
-  always_ff @(posedge clk_i) begin
+  always_ff @(posedge clka_i) begin
     douta_o <= mem[addra_i];
   end
 
-  always_ff @(posedge clk_i) begin
+  always_ff @(posedge clkb_i) begin
     doutb_o <= mem[addrb_i];
   end
 

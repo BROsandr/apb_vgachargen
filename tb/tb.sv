@@ -3,14 +3,21 @@ module tb ();
   timeprecision 1ps;
   timeunit      1ns;
 
-  logic clk;
+  logic factor_clk;
+  logic sys_clk;
   logic arst_n;
 
-  localparam int unsigned CLK_PERIOD = 10;
+  localparam int unsigned FACTOR_CLK_PERIOD = 40;
+  localparam int unsigned SYS_CLK_PERIOD    = 100;
 
   initial begin
-    clk <= 0;
-    forever #(CLK_PERIOD/2) clk <= ~clk;
+    factor_clk <= 0;
+    forever #(FACTOR_CLK_PERIOD/2) factor_clk <= ~factor_clk;
+  end
+
+  initial begin
+    sys_clk <= 0;
+    forever #(SYS_CLK_PERIOD/2) sys_clk <= ~sys_clk;
   end
 
   task reset();
@@ -35,8 +42,10 @@ module tb ();
   logic [7:0]                    col_map_data_o;
 
   vgachargen vgachargen(
-    .clk_i   (clk),
-    .arstn_i (arst_n),
+    .factor_clk_i   (factor_clk),
+    .sys_clk_i      (sys_clk),
+    .factor_arstn_i (arst_n),
+    .sys_arstn_i    (arst_n),
 
     .vga_r_o (),
     .vga_b_o (),
@@ -62,14 +71,14 @@ module tb ();
   task write_col_map();
     byte counter = 0;
 
-    @(posedge clk);
+    @(posedge sys_clk);
     col_map_addr_i <= COL_MAP_ADDR_WIDTH'(-1);
     col_map_data_i <= '1;
 
 
     for (int i = 0; i < 30; ++i) begin
       for (int j = 0; j < 80; ++j) begin
-        @(posedge clk);
+        @(posedge sys_clk);
         col_map_data_i <= counter;
         col_map_wen_i  <= 1'b1;
         col_map_addr_i <= col_map_addr_i + COL_MAP_ADDR_WIDTH'(1);
@@ -84,15 +93,15 @@ module tb ();
     bit fail = 0;
     byte counter = 0;
 
-    @(posedge clk);
+    @(posedge sys_clk);
     col_map_addr_i <= COL_MAP_ADDR_WIDTH'(0);
-    @(posedge clk);
-    @(posedge clk);
+    @(posedge sys_clk);
+    @(posedge sys_clk);
 
     for (int i = 0; i < 2399; ++i) begin
       logic [7:0] col_map_data;
       col_map_addr_i <= col_map_addr_i + COL_MAP_ADDR_WIDTH'(1);
-      @(posedge clk);
+      @(posedge sys_clk);
       col_map_data   = col_map_data_o;
       if (col_map_data != counter) begin
         fail = 1;
@@ -110,14 +119,14 @@ module tb ();
   task write_ch_map();
     bit [CH_MAP_DATA_WIDTH-1:0] counter = CH_MAP_DATA_WIDTH'(0);
 
-    @(posedge clk);
+    @(posedge sys_clk);
     ch_map_addr_i <= CH_MAP_ADDR_WIDTH'(-1);
     ch_map_data_i <= '1;
 
 
     for (int i = 0; i < 30; ++i) begin
       for (int j = 0; j < 80; ++j) begin
-        @(posedge clk);
+        @(posedge sys_clk);
         ch_map_data_i <= counter;
         ch_map_wen_i  <= 1'b1;
         ch_map_addr_i <= ch_map_addr_i + CH_MAP_ADDR_WIDTH'(1);
@@ -132,15 +141,15 @@ module tb ();
     bit fail = 0;
     bit [CH_MAP_DATA_WIDTH-1:0] counter = CH_MAP_DATA_WIDTH'(0);
 
-    @(posedge clk);
+    @(posedge sys_clk);
     ch_map_addr_i <= CH_MAP_ADDR_WIDTH'(0);
-    @(posedge clk);
-    @(posedge clk);
+    @(posedge sys_clk);
+    @(posedge sys_clk);
 
     for (int i = 0; i < 2399; ++i) begin
       logic [CH_MAP_DATA_WIDTH-1:0] ch_map_data;
       ch_map_addr_i <= ch_map_addr_i + CH_MAP_ADDR_WIDTH'(1);
-      @(posedge clk);
+      @(posedge sys_clk);
       ch_map_data   = ch_map_data_o;
       if (ch_map_data != counter) begin
         fail = 1;
@@ -158,13 +167,13 @@ module tb ();
   task write_ch_t_rw();
     bit [CH_T_DATA_WIDTH-1:0] counter = CH_T_DATA_WIDTH'(0);
 
-    @(posedge clk);
+    @(posedge sys_clk);
     ch_t_rw_addr_i <= CH_T_ADDR_WIDTH'(-1);
     ch_t_rw_data_i <= '1;
 
 
     for (int i = 0; i < 128; ++i) begin
-      @(posedge clk);
+      @(posedge sys_clk);
       ch_t_rw_data_i <= counter;
       ch_t_rw_wen_i  <= 1'b1;
       ch_t_rw_addr_i <= ch_t_rw_addr_i + CH_T_ADDR_WIDTH'(1);
@@ -178,15 +187,15 @@ module tb ();
     bit fail = 0;
     bit [CH_T_DATA_WIDTH-1:0] counter = CH_T_DATA_WIDTH'(0);
 
-    @(posedge clk);
+    @(posedge sys_clk);
     ch_t_rw_addr_i <= CH_T_ADDR_WIDTH'(0);
-    @(posedge clk);
-    @(posedge clk);
+    @(posedge sys_clk);
+    @(posedge sys_clk);
 
     for (int i = 0; i < 128; ++i) begin
       logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data;
       ch_t_rw_addr_i <= ch_t_rw_addr_i + CH_T_ADDR_WIDTH'(1);
-      @(posedge clk);
+      @(posedge sys_clk);
       ch_t_rw_data   = ch_t_rw_data_o;
       if (ch_t_rw_data != counter) begin
         fail = 1;
