@@ -1,11 +1,15 @@
 module vgachargen
   import vgachargen_pkg::*;
 #(
-  parameter int unsigned CLK_FACTOR_25M         = 100 / 25,
-  parameter              CH_T_RO_INIT_FILE_NAME = "ch_t_ro.mem",
-  parameter              CH_T_RW_INIT_FILE_NAME = "ch_t_rw.mem",
-  parameter              CH_MAP_INIT_FILE_NAME  = "ch_map.mem",
-  parameter              COL_MAP_INIT_FILE_NAME = "col_map.mem"
+  parameter int unsigned CLK_FACTOR_25M           = 100 / 25,
+  parameter              CH_T_RO_INIT_FILE_NAME   = "ch_t_ro.mem",
+  parameter bit          CH_T_RO_INIT_FILE_IS_BIN = 1,
+  parameter              CH_T_RW_INIT_FILE_NAME   = "ch_t_rw.mem",
+  parameter bit          CH_T_RW_INIT_FILE_IS_BIN = 1,
+  parameter              CH_MAP_INIT_FILE_NAME    = "ch_map.mem",
+  parameter bit          CH_MAP_INIT_FILE_IS_BIN  = 0,
+  parameter              COL_MAP_INIT_FILE_NAME   = "col_map.mem",
+  parameter bit          COL_MAP_INIT_FILE_IS_BIN = 0
 ) (
   input  logic                          sys_clk_i,
   input  logic                          factor_clk_i,
@@ -116,9 +120,10 @@ module vgachargen
   logic [CH_T_ADDR_WIDTH:0] ch_t_addr_internal;
 
   true_dual_port_rw_bram #(
-    .INIT_FILE_NAME ("ch_map.mem"),
-    .DATA_WIDTH     (CH_T_ADDR_WIDTH+1),
-    .ADDR_WIDTH     (CH_MAP_ADDR_WIDTH)
+    .INIT_FILE_NAME   (CH_MAP_INIT_FILE_NAME),
+    .INIT_FILE_IS_BIN (CH_MAP_INIT_FILE_IS_BIN),
+    .DATA_WIDTH       (CH_T_ADDR_WIDTH+1),
+    .ADDR_WIDTH       (CH_MAP_ADDR_WIDTH)
   ) ch_map (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
@@ -135,8 +140,8 @@ module vgachargen
   logic [CH_T_DATA_WIDTH-1:0] ch_t_ro_data_internal;
 
   single_port_ro_bram #(
-    .INIT_FILE_NAME   ("ch_t_ro.mem"),
-    .INIT_FILE_IS_BIN (1),
+    .INIT_FILE_NAME   (CH_T_RO_INIT_FILE_NAME),
+    .INIT_FILE_IS_BIN (CH_T_RO_INIT_FILE_IS_BIN),
     .DATA_WIDTH       (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_ro (
@@ -150,8 +155,8 @@ module vgachargen
   logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data_internal;
 
   true_dual_port_rw_bram #(
-    .INIT_FILE_NAME   ("ch_t_rw.mem"),
-    .INIT_FILE_IS_BIN (1),
+    .INIT_FILE_NAME   (CH_T_RW_INIT_FILE_NAME),
+    .INIT_FILE_IS_BIN (CH_T_RW_INIT_FILE_IS_BIN),
     .DATA_WIDTH       (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_rw (
@@ -189,9 +194,10 @@ module vgachargen
   assign bg_col_map_data = col_map_data_internal_delayed[3:0];
 
   true_dual_port_rw_bram #(
-    .INIT_FILE_NAME ("col_map.mem"),
-    .DATA_WIDTH     (8),
-    .ADDR_WIDTH     (COL_MAP_ADDR_WIDTH)
+    .INIT_FILE_NAME   (COL_MAP_INIT_FILE_NAME),
+    .INIT_FILE_IS_BIN (COL_MAP_INIT_FILE_IS_BIN),
+    .DATA_WIDTH       (8),
+    .ADDR_WIDTH       (COL_MAP_ADDR_WIDTH)
   ) col_map (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
