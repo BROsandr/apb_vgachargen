@@ -36,7 +36,8 @@ package vgachargen_pkg;
     BLACK = '0,
     WHITE = '1,
     BLUE  = 12'h00f,
-    RED   = 12'hf00
+    RED   = 12'hf00,
+    GREEN = 12'h0f0
   } color_t;
 
   function color_t color_decode(logic [3:0] color_encoded);
@@ -44,6 +45,7 @@ package vgachargen_pkg;
       4'h0   : return BLACK;
       4'ha   : return BLUE;
       4'hb   : return RED;
+      4'h1   : return GREEN;
       4'hf   : return WHITE;
       default: return BLACK;
     endcase
