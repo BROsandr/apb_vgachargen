@@ -16,21 +16,21 @@ module vgachargen
   input  logic                          sys_arstn_i,
   input  logic                          factor_arstn_i,
 
-  input  logic [7:0]                    sys_col_map_data_i,
-  input  logic [COL_MAP_ADDR_WIDTH-1:0] sys_col_map_addr_i,
-  input  logic                          sys_col_map_wen_i,
+  input  logic [7:0]                    col_map_data_i,
+  input  logic [COL_MAP_ADDR_WIDTH-1:0] col_map_addr_i,
+  input  logic                          col_map_wen_i,
 
-  input  logic [CH_MAP_DATA_WIDTH-1:0]  sys_ch_map_data_i,
-  input  logic [CH_MAP_ADDR_WIDTH-1:0]  sys_ch_map_addr_i,
-  input  logic                          sys_ch_map_wen_i,
+  input  logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_i,
+  input  logic [CH_MAP_ADDR_WIDTH-1:0]  ch_map_addr_i,
+  input  logic                          ch_map_wen_i,
 
-  input  logic [CH_T_DATA_WIDTH-1:0]    sys_ch_t_rw_data_i,
-  input  logic                          sys_ch_t_rw_wen_i,
-  input  logic [CH_T_ADDR_WIDTH-1:0]    sys_ch_t_rw_addr_i,
+  input  logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_i,
+  input  logic                          ch_t_rw_wen_i,
+  input  logic [CH_T_ADDR_WIDTH-1:0]    ch_t_rw_addr_i,
 
-  output logic [CH_MAP_DATA_WIDTH-1:0]  sys_ch_map_data_o,
-  output logic [CH_T_DATA_WIDTH-1:0]    sys_ch_t_rw_data_o,
-  output logic [7:0]                    sys_col_map_data_o,
+  output logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_o,
+  output logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_o,
+  output logic [7:0]                    col_map_data_o,
 
   output logic [3:0]                    vga_r_o,
   output logic [3:0]                    vga_g_o,
@@ -127,11 +127,11 @@ module vgachargen
   ) ch_map (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
-    .addra_i (sys_ch_map_addr_i),
+    .addra_i (ch_map_addr_i),
     .addrb_i (ch_map_addr_internal),
-    .wea_i   (sys_ch_map_wen_i),
+    .wea_i   (ch_map_wen_i),
     .dina_i  (ch_map_data_i),
-    .douta_o (sys_ch_map_data_o),
+    .douta_o (ch_map_data_o),
     .doutb_o (ch_t_addr_internal)
   );
 
@@ -162,11 +162,11 @@ module vgachargen
   ) ch_t_rw (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
-    .addra_i (sys_ch_t_rw_addr_i),
+    .addra_i (ch_t_rw_addr_i),
     .addrb_i (ch_t_rw_addr_internal),
-    .wea_i   (sys_ch_t_rw_wen_i),
+    .wea_i   (ch_t_rw_wen_i),
     .dina_i  (ch_t_rw_data_i),
-    .douta_o (sys_ch_t_rw_data_o),
+    .douta_o (ch_t_rw_data_o),
     .doutb_o (ch_t_rw_data_internal)
   );
 
@@ -201,11 +201,11 @@ module vgachargen
   ) col_map (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
-    .addra_i (sys_col_map_addr_i),
+    .addra_i (col_map_addr_i),
     .addrb_i (ch_map_addr_internal),
-    .wea_i   (sys_col_map_wen_i),
+    .wea_i   (col_map_wen_i),
     .dina_i  (col_map_data_i),
-    .douta_o (sys_col_map_data_o),
+    .douta_o (col_map_data_o),
     .doutb_o (col_map_data_internal)
   );
 
