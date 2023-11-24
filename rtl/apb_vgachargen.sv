@@ -34,8 +34,8 @@ module apb_vgachargen
   logic  apb_sel_ch_map;
   logic  apb_sel_col_map;
 
-  assign apb_sel_ch_map  = apb_paddr_i[$left(apb_paddr_i):2]  < APB_ADDR_WIDTH'(600);
-  assign apb_sel_col_map = apb_paddr_i[$left(apb_paddr_i):2] >= APB_ADDR_WIDTH'(600);
+  assign apb_sel_ch_map  = apb_paddr_i[13:12] == 2'b00;
+  assign apb_sel_col_map = apb_paddr_i[13:12] == 2'b01;
   // assign apb_sel_ch_t_rw = apb_paddr_i >= 2400 / 4;
 
   logic [31:0]                 col_map_data2apb;
