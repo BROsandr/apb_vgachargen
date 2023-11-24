@@ -31,6 +31,9 @@ module apb_vgachargen
   assign apb_write = apb_psel_i & apb_pwrite_i;
   assign apb_read  = apb_psel_i & ~apb_pwrite_i;
 
+  logic  apb_sel_ch_map;
+  logic  apb_sel_col_map;
+
   assign apb_sel_ch_map  = apb_paddr_i  < 2400 / 4;
   assign apb_sel_col_map = apb_paddr_i >= 2400 / 4;;
   // assign apb_sel_ch_t_rw = apb_paddr_i >= 2400 / 4;
@@ -43,8 +46,8 @@ module apb_vgachargen
   // // addr_in registers    //
   // //////////////////////////
 
-  logic [$clog(2400/4)-1:0] ch_map_addr_ff;
-  logic [$clog(2400/4)-1:0] ch_map_addr_next;
+  logic [9:0] ch_map_addr_ff;
+  logic [9:0] ch_map_addr_next;
 
   assign ch_map_addr_next = apb_paddr_i;
 
@@ -53,8 +56,8 @@ module apb_vgachargen
     else              ch_map_addr_ff <= ch_map_addr_next;
   end
 
-  logic [$clog(2400/4)-1:0] col_map_addr_ff;
-  logic [$clog(2400/4)-1:0] col_map_addr_next;
+  logic [9:0] col_map_addr_ff;
+  logic [9:0] col_map_addr_next;
 
   assign col_map_addr_next = apb_paddr_i;
 
@@ -105,7 +108,7 @@ module apb_vgachargen
   logic [31:0] col_map_data2vga_next;
   logic        col_map_data2vga_en;
 
-  assign col_map_data2vga_en   = apb_wirte && apb_sel_col_map;
+  assign col_map_data2vga_en   = apb_write && apb_sel_col_map;
   assign col_map_data2vga_next = apb_pwdata_i;
 
   always_ff @(posedge clk_i or negedge rstn_i) begin

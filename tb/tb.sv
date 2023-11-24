@@ -28,18 +28,18 @@ module tb ();
 
   import vgachargen_pkg::*;
 
-  logic [7:0]                    col_map_data_i;
-  logic [COL_MAP_ADDR_WIDTH-1:0] col_map_addr_i;
-  logic                          col_map_wen_i;
-  logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_i;
-  logic [CH_MAP_ADDR_WIDTH-1:0]  ch_map_addr_i;
-  logic                          ch_map_wen_i;
+  logic [3:0][7:0]                    col_map_data_i;
+  logic [$clog2(2400/4)-1:0] col_map_addr_i;
+  logic [3:0]                         col_map_wen_i;
+  logic [3:0][7:0]  ch_map_data_i;
+  logic [$clog2(2400/4)-1:0]  ch_map_addr_i;
+  logic [3:0]                        ch_map_wen_i;
   logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_i;
   logic                          ch_t_rw_wen_i;
   logic [CH_T_ADDR_WIDTH-1:0]    ch_t_rw_addr_i;
-  logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_o;
+  logic [31:0]  ch_map_data_o;
   logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_o;
-  logic [7:0]                    col_map_data_o;
+  logic [31:0]                    col_map_data_o;
 
   vgachargen vgachargen(
     .factor_clk_i   (factor_clk),
@@ -72,21 +72,19 @@ module tb ();
     byte counter = 0;
 
     @(posedge sys_clk);
-    col_map_addr_i <= COL_MAP_ADDR_WIDTH'(-1);
+    col_map_addr_i <= -10'h1;
     col_map_data_i <= '1;
 
 
-    for (int i = 0; i < 30; ++i) begin
-      for (int j = 0; j < 80; ++j) begin
-        @(posedge sys_clk);
-        col_map_data_i <= counter;
-        col_map_wen_i  <= 1'b1;
-        col_map_addr_i <= col_map_addr_i + COL_MAP_ADDR_WIDTH'(1);
-        ++counter;
-      end
+    for (int i = 0; i < 2400 / 4; ++i) begin
+      @(posedge sys_clk);
+      col_map_data_i <= {4{counter}};
+      col_map_wen_i  <= 4'b0010;
+      col_map_addr_i <= col_map_addr_i + 10'h1;
+      ++counter;
     end
     col_map_wen_i  <= 1'b0;
-    col_map_addr_i <= COL_MAP_ADDR_WIDTH'(0);
+    col_map_addr_i <= 10'h0;
   endtask
 
   task read_col_map();
@@ -94,23 +92,23 @@ module tb ();
     byte counter = 0;
 
     @(posedge sys_clk);
-    col_map_addr_i <= COL_MAP_ADDR_WIDTH'(0);
+    col_map_addr_i <= 10'h0;
     @(posedge sys_clk);
     @(posedge sys_clk);
 
-    for (int i = 0; i < 2399; ++i) begin
-      logic [7:0] col_map_data;
-      col_map_addr_i <= col_map_addr_i + COL_MAP_ADDR_WIDTH'(1);
+    for (int i = 0; i < 2400/4-1; ++i) begin
+      logic [31:0] col_map_data;
+      col_map_addr_i <= col_map_addr_i + 10'h1;
       @(posedge sys_clk);
       col_map_data   = col_map_data_o;
-      if (col_map_data != counter) begin
+      if ({col_map_data[31:8], 8'b0} != {counter, 8'b0}) begin
         fail = 1;
-        $error("col_map_data mismatch. Expected %x, actual %x", counter, col_map_data);
+        $error("col_map_data mismatch. Expected %x, actual %x", {counter, 8'b0}, col_map_data);
         $stop;
       end
       ++counter;
     end
-    col_map_addr_i <= COL_MAP_ADDR_WIDTH'(0);
+    col_map_addr_i <= 10'h0;
 
     if (!fail) $display("OK    :read_col_map");
     else       $display("ERROR :read_col_map");
