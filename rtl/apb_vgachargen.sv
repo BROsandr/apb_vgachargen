@@ -34,8 +34,8 @@ module apb_vgachargen
   logic  apb_sel_ch_map;
   logic  apb_sel_col_map;
 
-  assign apb_sel_ch_map  = apb_paddr_i  < 2400 / 4;
-  assign apb_sel_col_map = apb_paddr_i >= 2400 / 4;;
+  assign apb_sel_ch_map  = apb_paddr_i[$left(apb_paddr_i):2]  < APB_ADDR_WIDTH'(600);
+  assign apb_sel_col_map = apb_paddr_i[$left(apb_paddr_i):2] >= APB_ADDR_WIDTH'(600);
   // assign apb_sel_ch_t_rw = apb_paddr_i >= 2400 / 4;
 
   logic [31:0]                 col_map_data2apb;
@@ -49,7 +49,7 @@ module apb_vgachargen
   logic [9:0] ch_map_addr_ff;
   logic [9:0] ch_map_addr_next;
 
-  assign ch_map_addr_next = apb_paddr_i;
+  assign ch_map_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) ch_map_addr_ff <= '0;
@@ -59,7 +59,7 @@ module apb_vgachargen
   logic [9:0] col_map_addr_ff;
   logic [9:0] col_map_addr_next;
 
-  assign col_map_addr_next = apb_paddr_i;
+  assign col_map_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) col_map_addr_ff <= '0;
@@ -94,8 +94,8 @@ module apb_vgachargen
     else if (ch_map_data2vga_en) ch_map_data2vga_ff <= ch_map_data2vga_next;
   end
 
-  logic       ch_map_data2vga_en_ff;
-  logic       ch_map_data2vga_en_next;
+  logic [3:0] ch_map_data2vga_en_ff;
+  logic [3:0] ch_map_data2vga_en_next;
 
   assign      ch_map_data2vga_en_next = {4{ch_map_data2vga_en}};
 
@@ -116,10 +116,14 @@ module apb_vgachargen
     else if (col_map_data2vga_en) col_map_data2vga_ff <= col_map_data2vga_next;
   end
 
-  logic       col_map_data2vga_en_ff;
+  logic [3:0] col_map_data2vga_en_ff;
+  logic [3:0] col_map_data2vga_en_next;
+
+  assign col_map_data2vga_en_next = {4{col_map_data2vga_en}};
+
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i)             col_map_data2vga_en_ff <= '0;
-    else                          col_map_data2vga_en_ff <= col_map_data2vga_en;
+    else                          col_map_data2vga_en_ff <= col_map_data2vga_en_next;
   end
 
   // logic [127:0] ch_t_rw_data2vga_ff;
@@ -219,8 +223,10 @@ module apb_vgachargen
   vgachargen #(
     .CLK_FACTOR_25M  (50 / 25)
   ) vgachargen (
-    .clk_i,
-    .arstn_i  (rstn_i),
+    .sys_clk_i (clk_i),
+    .sys_arstn_i  (rstn_i),
+    .factor_clk_i (clk_i),
+    .factor_arstn_i  (rstn_i),
     .col_map_data_i (col_map_data2vga_ff),
     .col_map_data_o (col_map_data2apb),
     .col_map_addr_i (col_map_addr_ff),
