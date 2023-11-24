@@ -31,32 +31,32 @@ module apb_vgachargen
   assign apb_write = apb_psel_i & apb_pwrite_i;
   assign apb_read  = apb_psel_i & ~apb_pwrite_i;
 
-  assign apb_sel_ch_map  = apb_paddr_i  < 2400 * 4;
-  assign apb_sel_col_map  = apb_sel_ch_map;
-  assign apb_sel_ch_t_rw = apb_paddr_i >= 2400 * 4;
+  assign apb_sel_ch_map  = apb_paddr_i  < 2400 / 4;
+  assign apb_sel_col_map = apb_paddr_i >= 2400 / 4;;
+  // assign apb_sel_ch_t_rw = apb_paddr_i >= 2400 / 4;
 
-  logic [7:0]                 col_map_data2apb;
-  logic [7:0]                 ch_map_data2apb;
-  logic [127:0]               ch_t_rw_data2apb;
+  logic [31:0]                 col_map_data2apb;
+  logic [31:0]                 ch_map_data2apb;
+  // logic [127:0]               ch_t_rw_data2apb;
 
   // //////////////////////////
   // // addr_in registers    //
   // //////////////////////////
 
-  logic [$clog2(80 * 30)-1:0] ch_map_addr_ff;
-  logic [$clog2(80 * 30)-1:0] ch_map_addr_next;
+  logic [$clog(2400/4)-1:0] ch_map_addr_ff;
+  logic [$clog(2400/4)-1:0] ch_map_addr_next;
 
-  assign ch_map_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
+  assign ch_map_addr_next = apb_paddr_i;
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) ch_map_addr_ff <= '0;
     else              ch_map_addr_ff <= ch_map_addr_next;
   end
 
-  logic [$clog2(80 * 30)-1:0] col_map_addr_ff;
-  logic [$clog2(80 * 30)-1:0] col_map_addr_next;
+  logic [$clog(2400/4)-1:0] col_map_addr_ff;
+  logic [$clog(2400/4)-1:0] col_map_addr_next;
 
-  assign col_map_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
+  assign col_map_addr_next = apb_paddr_i;
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i) col_map_addr_ff <= '0;
@@ -65,26 +65,26 @@ module apb_vgachargen
   
   import vgachargen_pkg::*;
 
-  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_ff;
-  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_next;
+  // logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_ff;
+  // logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_next;
 
-  assign ch_t_rw_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
+  // assign ch_t_rw_addr_next = apb_paddr_i[$left(apb_paddr_i):2];
 
-  always_ff @(posedge clk_i or negedge rstn_i) begin
-    if      (~rstn_i) ch_t_rw_addr_ff <= '0;
-    else              ch_t_rw_addr_ff <= ch_t_rw_addr_next;
-  end
+  // always_ff @(posedge clk_i or negedge rstn_i) begin
+  //   if      (~rstn_i) ch_t_rw_addr_ff <= '0;
+  //   else              ch_t_rw_addr_ff <= ch_t_rw_addr_next;
+  // end
 
   // //////////////////////////
   // // data_in registers    //
   // //////////////////////////
 
-  logic [7:0] ch_map_data2vga_ff;
-  logic [7:0] ch_map_data2vga_next;
-  logic       ch_map_data2vga_en;
+  logic [31:0] ch_map_data2vga_ff;
+  logic [31:0] ch_map_data2vga_next;
+  logic        ch_map_data2vga_en;
 
   assign ch_map_data2vga_en   = apb_write && apb_sel_ch_map;
-  assign ch_map_data2vga_next = apb_pwdata_i[7:0];
+  assign ch_map_data2vga_next = apb_pwdata_i;
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i)            ch_map_data2vga_ff <= '0;
@@ -92,17 +92,21 @@ module apb_vgachargen
   end
 
   logic       ch_map_data2vga_en_ff;
+  logic       ch_map_data2vga_en_next;
+
+  assign      ch_map_data2vga_en_next = {4{ch_map_data2vga_en}};
+
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i)            ch_map_data2vga_en_ff <= '0;
-    else                         ch_map_data2vga_en_ff <= ch_map_data2vga_en;
+    else                         ch_map_data2vga_en_ff <= ch_map_data2vga_en_next;
   end
 
-  logic [7:0] col_map_data2vga_ff;
-  logic [7:0] col_map_data2vga_next;
-  logic       col_map_data2vga_en;
+  logic [31:0] col_map_data2vga_ff;
+  logic [31:0] col_map_data2vga_next;
+  logic        col_map_data2vga_en;
 
-  assign col_map_data2vga_en   = ch_map_data2vga_en;
-  assign col_map_data2vga_next = apb_pwdata_i[15:8];
+  assign col_map_data2vga_en   = apb_wirte && apb_sel_col_map;
+  assign col_map_data2vga_next = apb_pwdata_i;
 
   always_ff @(posedge clk_i or negedge rstn_i) begin
     if      (~rstn_i)             col_map_data2vga_ff <= '0;
@@ -115,26 +119,26 @@ module apb_vgachargen
     else                          col_map_data2vga_en_ff <= col_map_data2vga_en;
   end
 
-  logic [127:0] ch_t_rw_data2vga_ff;
-  logic [127:0] ch_t_rw_data2vga_next;
-  logic         ch_t_rw_data2vga_en;
+  // logic [127:0] ch_t_rw_data2vga_ff;
+  // logic [127:0] ch_t_rw_data2vga_next;
+  // logic         ch_t_rw_data2vga_en;
 
-  assign ch_t_rw_data2vga_en   = apb_write && apb_sel_ch_t_rw;
-  assign ch_t_rw_data2vga_next =  (ch_t_rw_addr_ff[3:2] == 0) ? {ch_t_rw_data2apb[127:33], apb_pwdata_i} :
-                                  (ch_t_rw_addr_ff[3:2] == 1) ? {ch_t_rw_data2apb[127:64], apb_pwdata_i, ch_t_rw_data2apb[31:0]} :
-                                  (ch_t_rw_addr_ff[3:2] == 2) ? {ch_t_rw_data2apb[127:96], apb_pwdata_i, ch_t_rw_data2apb[63:0]}
-                                                              : {apb_pwdata_i, ch_t_rw_data2apb[95:0]};
+  // assign ch_t_rw_data2vga_en   = apb_write && apb_sel_ch_t_rw;
+  // assign ch_t_rw_data2vga_next =  (ch_t_rw_addr_ff[3:2] == 0) ? {ch_t_rw_data2apb[127:33], apb_pwdata_i} :
+  //                                 (ch_t_rw_addr_ff[3:2] == 1) ? {ch_t_rw_data2apb[127:64], apb_pwdata_i, ch_t_rw_data2apb[31:0]} :
+  //                                 (ch_t_rw_addr_ff[3:2] == 2) ? {ch_t_rw_data2apb[127:96], apb_pwdata_i, ch_t_rw_data2apb[63:0]}
+  //                                                             : {apb_pwdata_i, ch_t_rw_data2apb[95:0]};
 
-  always_ff @(posedge clk_i or negedge rstn_i) begin
-    if      (~rstn_i)             ch_t_rw_data2vga_ff <= '0;
-    else if (ch_t_rw_data2vga_en) ch_t_rw_data2vga_ff <= ch_t_rw_data2vga_next;
-  end
+  // always_ff @(posedge clk_i or negedge rstn_i) begin
+  //   if      (~rstn_i)             ch_t_rw_data2vga_ff <= '0;
+  //   else if (ch_t_rw_data2vga_en) ch_t_rw_data2vga_ff <= ch_t_rw_data2vga_next;
+  // end
 
-  logic         ch_t_rw_data2vga_en_ff;
-  always_ff @(posedge clk_i or negedge rstn_i) begin
-    if      (~rstn_i)             ch_t_rw_data2vga_en_ff <= '0;
-    else                          ch_t_rw_data2vga_en_ff <= ch_t_rw_data2vga_en;
-  end
+  // logic         ch_t_rw_data2vga_en_ff;
+  // always_ff @(posedge clk_i or negedge rstn_i) begin
+  //   if      (~rstn_i)             ch_t_rw_data2vga_en_ff <= '0;
+  //   else                          ch_t_rw_data2vga_en_ff <= ch_t_rw_data2vga_en;
+  // end
 
 
   //////////////////////////
@@ -143,14 +147,12 @@ module apb_vgachargen
 
   always_comb begin
     apb_prdata_o = '0;
-  
-    if      (apb_sel_ch_t_rw) apb_prdata_o[7:0]  = ch_t_rw_data2apb;
-    else if (apb_sel_col_map) begin
-      apb_prdata_o[15:8] = col_map_data2apb;
-      apb_prdata_o[7:0]  = ch_map_data2apb;
-    end
 
-    // apb_prdata_o = apb_prdata_o & {32{~apb_write}};
+    case ({apb_sel_col_map, apb_sel_ch_map})
+      2'b01  : apb_prdata_o = ch_map_data2apb;
+      2'b10  : apb_prdata_o = col_map_data2apb;
+      default: apb_prdata_o = 32'hfa11_1eaf;
+    endcase
   end
 
   //////////////////////////
@@ -224,10 +226,10 @@ module apb_vgachargen
     .ch_map_data_o (ch_map_data2apb),
     .ch_map_addr_i (ch_map_addr_ff),
     .ch_map_wen_i (ch_map_data2vga_en_ff),
-    .ch_t_rw_data_i (ch_t_rw_data2vga_ff),
-    .ch_t_rw_data_o (ch_t_rw_data2apb),
-    .ch_t_rw_wen_i (ch_t_rw_data2vga_en_ff),
-    .ch_t_rw_addr_i (ch_t_rw_addr_ff),
+    .ch_t_rw_data_i ('0),
+    .ch_t_rw_data_o (),
+    .ch_t_rw_wen_i ('0),
+    .ch_t_rw_addr_i ('0),
     .vga_r_o (R_o),
     .vga_g_o (G_o),
     .vga_b_o (B_o),

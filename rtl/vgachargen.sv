@@ -1,42 +1,42 @@
 module vgachargen
   import vgachargen_pkg::*;
 #(
-  parameter int unsigned CLK_FACTOR_25M           = 100 / 25,
-  parameter              CH_T_RO_INIT_FILE_NAME   = "ch_t_ro.mem",
-  parameter bit          CH_T_RO_INIT_FILE_IS_BIN = 1,
-  parameter              CH_T_RW_INIT_FILE_NAME   = "ch_t_rw.mem",
-  parameter bit          CH_T_RW_INIT_FILE_IS_BIN = 1,
-  parameter              CH_MAP_INIT_FILE_NAME    = "ch_map.mem",
-  parameter bit          CH_MAP_INIT_FILE_IS_BIN  = 0,
-  parameter              COL_MAP_INIT_FILE_NAME   = "col_map.mem",
-  parameter bit          COL_MAP_INIT_FILE_IS_BIN = 0
+  parameter int unsigned             CLK_FACTOR_25M           = 100 / 25,
+  parameter                          CH_T_RO_INIT_FILE_NAME   = "ch_t_ro.mem",
+  parameter bit                      CH_T_RO_INIT_FILE_IS_BIN = 1,
+  parameter                          CH_T_RW_INIT_FILE_NAME   = "ch_t_rw.mem",
+  parameter bit                      CH_T_RW_INIT_FILE_IS_BIN = 1,
+  parameter                          CH_MAP_INIT_FILE_NAME    = "ch_map.mem",
+  parameter bit                      CH_MAP_INIT_FILE_IS_BIN  = 0,
+  parameter                          COL_MAP_INIT_FILE_NAME   = "col_map.mem",
+  parameter bit                      COL_MAP_INIT_FILE_IS_BIN = 0
 ) (
-  input  logic                          sys_clk_i,
-  input  logic                          factor_clk_i,
-  input  logic                          sys_arstn_i,
-  input  logic                          factor_arstn_i,
+  input  logic                       sys_clk_i,
+  input  logic                       factor_clk_i,
+  input  logic                       sys_arstn_i,
+  input  logic                       factor_arstn_i,
 
-  input  logic [7:0]                    col_map_data_i,
-  input  logic [COL_MAP_ADDR_WIDTH-1:0] col_map_addr_i,
-  input  logic                          col_map_wen_i,
+  input  logic [3:0][7:0]            col_map_data_i,
+  input  logic [9:0]                 col_map_addr_i,
+  input  logic [3:0]                 col_map_wen_i,
 
-  input  logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_i,
-  input  logic [CH_MAP_ADDR_WIDTH-1:0]  ch_map_addr_i,
-  input  logic                          ch_map_wen_i,
+  input  logic [3:0][7:0]            ch_map_data_i,
+  input  logic [9:0]                 ch_map_addr_i,
+  input  logic [3:0]                 ch_map_wen_i,
 
-  input  logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_i,
-  input  logic                          ch_t_rw_wen_i,
-  input  logic [CH_T_ADDR_WIDTH-1:0]    ch_t_rw_addr_i,
+  input  logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data_i,
+  input  logic                       ch_t_rw_wen_i,
+  input  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_i,
 
-  output logic [CH_MAP_DATA_WIDTH-1:0]  ch_map_data_o,
-  output logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_o,
-  output logic [7:0]                    col_map_data_o,
+  output logic [31:0]                ch_map_data_o,
+  output logic [31:0]                ch_t_rw_data_o,
+  output logic [31:0]                col_map_data_o,
 
-  output logic [3:0]                    vga_r_o,
-  output logic [3:0]                    vga_g_o,
-  output logic [3:0]                    vga_b_o,
-  output logic                          vga_hs_o,
-  output logic                          vga_vs_o
+  output logic [3:0]                 vga_r_o,
+  output logic [3:0]                 vga_g_o,
+  output logic [3:0]                 vga_b_o,
+  output logic                       vga_hs_o,
+  output logic                       vga_vs_o
 );
 
   logic [VGA_MAX_H_WIDTH-1:0] hcount_pixels;
@@ -119,20 +119,23 @@ module vgachargen
 
   logic [CH_T_ADDR_WIDTH:0] ch_t_addr_internal;
 
+  logic [3:0][7:0] ch_map_data_word;
+
+  assign ch_t_addr_internal = ch_map_data_word[ch_map_addr_internal[1:0]];
+
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   (CH_MAP_INIT_FILE_NAME),
     .INIT_FILE_IS_BIN (CH_MAP_INIT_FILE_IS_BIN),
-    .DATA_WIDTH       (CH_T_ADDR_WIDTH+1),
-    .ADDR_WIDTH       (CH_MAP_ADDR_WIDTH)
+    .ADDR_WIDTH       (10)
   ) ch_map (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
     .addra_i (ch_map_addr_i),
-    .addrb_i (ch_map_addr_internal),
+    .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
     .wea_i   (ch_map_wen_i),
     .dina_i  (ch_map_data_i),
     .douta_o (ch_map_data_o),
-    .doutb_o (ch_t_addr_internal)
+    .doutb_o (ch_map_data_word)
   );
 
   logic [CH_T_ADDR_WIDTH-1:0] ch_t_ro_addr_internal;
@@ -157,7 +160,8 @@ module vgachargen
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   (CH_T_RW_INIT_FILE_NAME),
     .INIT_FILE_IS_BIN (CH_T_RW_INIT_FILE_IS_BIN),
-    .DATA_WIDTH       (CH_T_DATA_WIDTH),
+    .NUM_COLS         (1),
+    .COL_WIDTH        (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) ch_t_rw (
     .clka_i  (sys_clk_i),
@@ -176,6 +180,10 @@ module vgachargen
 
   logic [7:0] col_map_data_internal;
   logic [7:0] col_map_data_internal_delayed;
+
+  logic [3:0][7:0] col_map_data_internal_word;
+
+  assign col_map_data_internal = col_map_data_internal_word[ch_map_addr_internal[1:0]];
 
   delay #(
     .DATA_WIDTH (8),
@@ -196,17 +204,16 @@ module vgachargen
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   (COL_MAP_INIT_FILE_NAME),
     .INIT_FILE_IS_BIN (COL_MAP_INIT_FILE_IS_BIN),
-    .DATA_WIDTH       (8),
-    .ADDR_WIDTH       (COL_MAP_ADDR_WIDTH)
+    .ADDR_WIDTH       (10)
   ) col_map (
     .clka_i  (sys_clk_i),
     .clkb_i  (factor_clk_i),
     .addra_i (col_map_addr_i),
-    .addrb_i (ch_map_addr_internal),
+    .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
     .wea_i   (col_map_wen_i),
     .dina_i  (col_map_data_i),
     .douta_o (col_map_data_o),
-    .doutb_o (col_map_data_internal)
+    .doutb_o (col_map_data_internal_word)
   );
 
   logic   currentPixel;
