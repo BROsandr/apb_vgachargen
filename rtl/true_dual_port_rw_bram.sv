@@ -7,16 +7,16 @@ module true_dual_port_rw_bram #(
   localparam int unsigned DATA_WIDTH       = NUM_COLS * COL_WIDTH,
   localparam int unsigned DEPTH_WORDS      = 2 ** ADDR_WIDTH
 ) (
-  input  logic                                 clka_i,
-  input  logic                                 clkb_i,
-  input  logic [ADDR_WIDTH-1:0]                addra_i,
-  input  logic [ADDR_WIDTH-1:0]                addrb_i,
-  input  logic [NUM_COLS  -1:0]                wea_i,
-  input  logic [NUM_COLS  -1:0][COL_WIDTH-1:0] dina_i,
-  output logic [DATA_WIDTH-1:0]                douta_o,
-  output logic [DATA_WIDTH-1:0]                doutb_o
+  input  logic                  clka_i,
+  input  logic                  clkb_i,
+  input  logic [ADDR_WIDTH-1:0] addra_i,
+  input  logic [ADDR_WIDTH-1:0] addrb_i,
+  input  logic [NUM_COLS  -1:0] wea_i,
+  input  logic [DATA_WIDTH-1:0] dina_i,
+  output logic [DATA_WIDTH-1:0] douta_o,
+  output logic [DATA_WIDTH-1:0] doutb_o
 );
-  logic [NUM_COLS-1:0][COL_WIDTH-1:0] mem[DEPTH_WORDS];
+  logic [DATA_WIDTH-1:0] mem[DEPTH_WORDS];
 
   if (INIT_FILE_NAME != "") begin                                                     : use_init_file
     if   (INIT_FILE_IS_BIN) initial  $readmemb(INIT_FILE_NAME, mem, 0, DEPTH_WORDS-1);
@@ -29,7 +29,7 @@ module true_dual_port_rw_bram #(
 
   always_ff @(posedge clka_i) begin
     for (int i = 0; i < NUM_COLS; ++i) begin
-      if (wea_i[i]) mem[addra_i][i] <= dina_i[i];
+      if (wea_i[i]) mem[addra_i][i*COL_WIDTH+:COL_WIDTH] <= dina_i[i*COL_WIDTH+:COL_WIDTH];
     end
   end
 
