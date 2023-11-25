@@ -268,3 +268,324 @@ module vgachargen
   assign vga_vs_o = vga_vs_ff;
 
 endmodule
+
+module clk_divider # (
+  parameter int unsigned DIVISOR = 2
+) (
+  input  logic                       clk_i,
+  input  logic                       arstn_i,
+  output logic                       strb_o
+);
+  localparam int unsigned COUNTER_WIDTH = (DIVISOR > 1) ? $clog2(DIVISOR) : 1;
+
+  logic [COUNTER_WIDTH-1:0] counter_next;
+  logic [COUNTER_WIDTH-1:0] counter_ff;
+
+  assign counter_next = ~|counter_ff ? COUNTER_WIDTH'(DIVISOR - 1) : (counter_ff - COUNTER_WIDTH'(1));
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (~arstn_i) counter_ff <= '0;
+    else            counter_ff <= counter_next;
+  end
+
+  logic strb_ff;
+  logic strb_next;
+
+  assign strb_next = ~|counter_ff;
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (~arstn_i) strb_ff <= '0;
+    else            strb_ff <= strb_next;
+  end
+
+  assign strb_o = strb_ff;
+
+endmodule
+
+module delay #(
+  parameter int unsigned DATA_WIDTH = 8,
+  parameter int unsigned DELAY_BY   = 2
+) (
+  input  logic                  clk_i,
+  input  logic                  arstn_i,
+  input  logic [DATA_WIDTH-1:0] data_i,
+  output logic [DATA_WIDTH-1:0] data_o
+);
+  logic [DELAY_BY-1:0][DATA_WIDTH-1:0] data_ff  ;
+  logic [DELAY_BY-1:0][DATA_WIDTH-1:0] data_next;
+
+  if   (DELAY_BY == 1) begin
+    assign data_next = data_i;
+    assign data_o    = data_ff;
+  end else begin
+    assign data_next = {data_ff[DELAY_BY-2:0], data_i};
+    assign data_o    = data_ff[DELAY_BY-1];
+  end
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if (!arstn_i) data_ff <= '0;
+    else          data_ff <= data_next;
+  end
+endmodule
+
+module index_generator
+  import vgachargen_pkg::*;
+(
+  input  logic [VGA_MAX_V_WIDTH  -1:0] vcount_i,
+  input  logic [VGA_MAX_H_WIDTH  -1:0] hcount_i,
+
+  output logic [CH_MAP_ADDR_WIDTH-1:0] ch_map_addr_o,
+  output logic [BITMAP_ADDR_WIDTH-1:0] bitmap_addr_o
+);
+
+  logic [CH_H_WIDTH-1:0] haddr_chars;
+  logic [CH_V_WIDTH-1:0] vaddr_chars;
+
+  assign haddr_chars = CH_H_WIDTH'(hcount_i >> BITMAP_H_WIDTH);
+  assign vaddr_chars = CH_V_WIDTH'(vcount_i >> BITMAP_V_WIDTH);
+
+  `define _MULT_BY_80(_x) ((_x << 6) + (_x << 4))
+  assign ch_map_addr_o = `_MULT_BY_80(vaddr_chars) + haddr_chars;
+  `undef _MULT_BY_80
+
+  logic [BITMAP_H_WIDTH-1:0] haddr_pixels;
+  logic [BITMAP_V_WIDTH-1:0] vaddr_pixels;
+
+  assign haddr_pixels = hcount_i[BITMAP_H_WIDTH-1:0];
+  assign vaddr_pixels = vcount_i[BITMAP_V_WIDTH-1:0];
+
+  `define _MULT_BY_8(_x) (_x << 3)
+  assign bitmap_addr_o = `_MULT_BY_8(vaddr_pixels) + haddr_pixels;
+  `undef _MULT_BY_8
+
+
+endmodule
+
+module single_port_ro_bram #(
+  parameter               INIT_FILE_NAME   = "",
+  parameter               INIT_FILE_IS_BIN = 0,
+  parameter  int unsigned DATA_WIDTH       = 2,
+  parameter  int unsigned ADDR_WIDTH       = 4,
+  localparam int unsigned DEPTH_WORDS      = 2 ** ADDR_WIDTH
+) (
+  input  logic                  clk_i,
+  input  logic [ADDR_WIDTH-1:0] addr_i,
+  output logic [DATA_WIDTH-1:0] dout_o
+);
+  logic [DATA_WIDTH-1:0] mem[DEPTH_WORDS];
+
+  if   (INIT_FILE_IS_BIN) initial  $readmemb(INIT_FILE_NAME, mem, 0, DEPTH_WORDS-1);
+  else                    initial  $readmemh(INIT_FILE_NAME, mem, 0, DEPTH_WORDS-1);
+
+  always_ff @(posedge clk_i) begin
+    dout_o <= mem[addr_i];
+  end
+
+endmodule
+
+module timing_generator
+  import vgachargen_pkg::*;
+(
+  input  logic                       clk_i,
+  input  logic                       arstn_i,
+  input  logic                       en_i,
+
+  output logic                       vga_hs_o,
+  output logic                       vga_vs_o,
+
+  // Display timing counters
+  output logic [VGA_MAX_H_WIDTH-1:0] hcount_o,
+  output logic [VGA_MAX_V_WIDTH-1:0] vcount_o,
+  output logic                       pixel_enable_o
+
+);
+
+  logic [VGA_MAX_H_WIDTH-1:0] hcount_ff;
+  logic hcount_en;
+  logic [VGA_MAX_H_WIDTH-1:0] hcount_next;
+
+  logic [VGA_MAX_V_WIDTH-1:0] vcount_ff;
+  logic vcount_en;
+  logic [VGA_MAX_V_WIDTH-1:0] vcount_next;
+
+  // Horizontal counter
+  assign hcount_next = ( hcount_ff < ( HTOTAL - 1 ) ) ? ( hcount_ff + 1 ) : ( '0 );
+  always_ff @ ( posedge clk_i or negedge arstn_i )
+    if      ( ~arstn_i  ) hcount_ff <= '0;
+    else if (en_i)        hcount_ff <= hcount_next;
+
+  // Vertical counter
+  assign vcount_en   = ( hcount_ff == ( HTOTAL - 1 ) ) & en_i;
+  assign vcount_next = ( vcount_ff < ( VTOTAL - 1 ) ) ? ( vcount_ff + 1 ) : ( '0 );
+  always_ff @( posedge clk_i or negedge arstn_i )
+    if      ( ~arstn_i    ) vcount_ff <= '0;
+    else if ( vcount_en   ) vcount_ff <= vcount_next;
+
+  enum {
+    DISPLAY_S,
+    FRONT_S,
+    SYNC_S,
+    BACK_S
+  } hstate_ff, hstate_next,
+    vstate_ff, vstate_next;
+
+  always_ff @( posedge clk_i or negedge arstn_i )
+    if( ~arstn_i ) begin
+      hstate_ff <= DISPLAY_S;
+      vstate_ff <= DISPLAY_S;
+    end else if (en_i) begin
+      hstate_ff <= hstate_next;
+      vstate_ff <= vstate_next;
+    end
+
+  always_comb begin
+    hstate_next = hstate_ff;
+    unique case( hstate_ff)
+      DISPLAY_S: if( hcount_ff == HD - 1 )           hstate_next = FRONT_S;
+
+      FRONT_S:   if( hcount_ff == HD + HF - 1 )      hstate_next = SYNC_S;
+
+      SYNC_S:    if( hcount_ff == HD + HF + HR - 1 ) hstate_next = BACK_S;
+
+      BACK_S:    if( hcount_ff == HTOTAL - 1 )       hstate_next = DISPLAY_S;
+
+      default:                                       hstate_next = DISPLAY_S;
+    endcase
+  end
+
+  always_comb begin
+    vstate_next = vstate_ff;
+    if( vcount_en ) begin
+      unique case( vstate_ff)
+        DISPLAY_S: if( vcount_ff == VD - 1 )           vstate_next = FRONT_S;
+
+        FRONT_S:   if( vcount_ff == VD + VF - 1 )      vstate_next = SYNC_S;
+
+        SYNC_S:    if( vcount_ff == VD + VF + VR - 1 ) vstate_next = BACK_S;
+
+        BACK_S:    if( vcount_ff == VTOTAL - 1 )       vstate_next = DISPLAY_S;
+
+        default:                                       vstate_next = DISPLAY_S;
+      endcase
+    end
+  end
+
+  logic vga_vs_ff;
+  logic vga_vs_next;
+
+  assign vga_vs_next = vstate_next inside {DISPLAY_S, FRONT_S, BACK_S};
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if      (!arstn_i) vga_vs_ff <= 1'b1;
+    else if (en_i)     vga_vs_ff <= vga_vs_next;
+  end
+
+  logic vga_hs_ff;
+  logic vga_hs_next;
+
+  assign vga_hs_next = hstate_next inside {DISPLAY_S, FRONT_S, BACK_S};
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if      (!arstn_i) vga_hs_ff <= 1'b1;
+    else if (en_i)     vga_hs_ff <= vga_hs_next;
+  end
+
+  logic pixel_enable_ff;
+  logic pixel_enable_next;
+
+  assign pixel_enable_next = ( vstate_next == DISPLAY_S ) && ( hstate_next == DISPLAY_S );
+
+  always_ff @(posedge clk_i or negedge arstn_i) begin
+    if   (!arstn_i) pixel_enable_ff <= 1'b0;
+    else if (en_i)  pixel_enable_ff <= pixel_enable_next;
+  end
+
+  assign vga_hs_o = vga_hs_ff;
+  assign vga_vs_o = vga_vs_ff;
+
+  assign pixel_enable_o = pixel_enable_ff;
+
+  assign hcount_o = hcount_ff;
+  assign vcount_o = vcount_ff;
+endmodule
+
+module true_dual_port_rw_bram #(
+  parameter               INIT_FILE_NAME   = "",
+  parameter               INIT_FILE_IS_BIN = 0,
+  parameter  int unsigned COL_WIDTH        = 8,
+  parameter  int unsigned NUM_COLS         = 4,
+  parameter  int unsigned ADDR_WIDTH       = 4,
+  localparam int unsigned DATA_WIDTH       = NUM_COLS * COL_WIDTH,
+  localparam int unsigned DEPTH_WORDS      = 2 ** ADDR_WIDTH
+) (
+  input  logic                  clka_i,
+  input  logic                  clkb_i,
+  input  logic [ADDR_WIDTH-1:0] addra_i,
+  input  logic [ADDR_WIDTH-1:0] addrb_i,
+  input  logic [NUM_COLS  -1:0] wea_i,
+  input  logic [DATA_WIDTH-1:0] dina_i,
+  output logic [DATA_WIDTH-1:0] douta_o,
+  output logic [DATA_WIDTH-1:0] doutb_o
+);
+  logic [DATA_WIDTH-1:0] mem[DEPTH_WORDS];
+
+  if (INIT_FILE_NAME != "") begin                                                     : use_init_file
+    if   (INIT_FILE_IS_BIN) initial  $readmemb(INIT_FILE_NAME, mem, 0, DEPTH_WORDS-1);
+    else                    initial  $readmemh(INIT_FILE_NAME, mem, 0, DEPTH_WORDS-1);
+  end else begin                                                                      : init_bram_to_zero
+    initial begin
+      for (int unsigned i = 0; i < DEPTH_WORDS; ++i) mem[i] = '0;
+    end
+  end
+
+  always_ff @(posedge clka_i) begin
+    for (int i = 0; i < NUM_COLS; ++i) begin
+      if (wea_i[i]) mem[addra_i][i*COL_WIDTH+:COL_WIDTH] <= dina_i[i*COL_WIDTH+:COL_WIDTH];
+    end
+  end
+
+  always_ff @(posedge clka_i) begin
+    douta_o <= mem[addra_i];
+  end
+
+  always_ff @(posedge clkb_i) begin
+    doutb_o <= mem[addrb_i];
+  end
+
+endmodule
+
+module vga_block
+  import vgachargen_pkg::*;
+#(
+  parameter int unsigned             CLK_FACTOR_25M = 4
+) (
+  input  logic                       clk_i,
+  input  logic                       arstn_i,
+  output logic [VGA_MAX_H_WIDTH-1:0] hcount_o,
+  output logic [VGA_MAX_V_WIDTH-1:0] vcount_o,
+  output logic                       pixel_enable_o,
+  output logic                       vga_hs_o,
+  output logic                       vga_vs_o
+);
+  logic clk_divider_strb;
+
+  clk_divider # (
+    .DIVISOR (CLK_FACTOR_25M)
+  ) clk_divider (
+    .clk_i,
+    .arstn_i,
+    .strb_o  (clk_divider_strb)
+  );
+
+  timing_generator timing_generator (
+    .clk_i,
+    .arstn_i,
+    .en_i     (clk_divider_strb),
+    .vga_hs_o,
+    .vga_vs_o,
+    .hcount_o,
+    .vcount_o,
+    .pixel_enable_o
+
+  );
+endmodule
