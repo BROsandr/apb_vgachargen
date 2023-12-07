@@ -22,14 +22,14 @@ package vgachargen_pkg;
   parameter int unsigned CH_T_DATA_WIDTH   = BITMAP_H_PIXELS * BITMAP_V_PIXELS;
   parameter int unsigned BITMAP_ADDR_WIDTH = $clog2(CH_T_DATA_WIDTH);
   parameter int unsigned CHARSET_COUNT     = 256;
-  parameter int unsigned CH_T_ADDR_WIDTH   = $clog2(CHARSET_COUNT/2);
+  parameter int unsigned CH_T_ADDR_WIDTH   = $clog2(CHARSET_COUNT);
 
   parameter int unsigned CH_H_PIXELS        = HD / BITMAP_H_PIXELS;
   parameter int unsigned CH_V_PIXELS        = VD / BITMAP_V_PIXELS;
   parameter int unsigned CH_V_WIDTH         = $clog2(CH_V_PIXELS);
   parameter int unsigned CH_H_WIDTH         = $clog2(CH_H_PIXELS);
   parameter int unsigned CH_MAP_ADDR_WIDTH  = CH_V_WIDTH + CH_H_WIDTH;
-  parameter int unsigned CH_MAP_DATA_WIDTH  = CH_T_ADDR_WIDTH + 1;
+  parameter int unsigned CH_MAP_DATA_WIDTH  = CH_T_ADDR_WIDTH;
   parameter int unsigned COL_MAP_ADDR_WIDTH = CH_MAP_ADDR_WIDTH;
 
   typedef enum logic [23:0] {

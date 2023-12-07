@@ -2,10 +2,8 @@ module vgachargen
   import vgachargen_pkg::*;
 #(
   parameter int unsigned  CLK_FACTOR_25M           = 100 / 25,
-  parameter               CH_T_RO_INIT_FILE_NAME   = "lab12_vga_ch_t_ro.mem",
-  parameter bit           CH_T_RO_INIT_FILE_IS_BIN = 1,
-  parameter               CH_T_RW_INIT_FILE_NAME   = "lab12_vga_ch_t_rw.mem",
-  parameter bit           CH_T_RW_INIT_FILE_IS_BIN = 1,
+  parameter               CH_T_INIT_FILE_NAME      = "lab12_vga_ch_t.mem",
+  parameter bit           CH_T_INIT_FILE_IS_BIN    = 1,
   parameter               CH_MAP_INIT_FILE_NAME    = "lab12_vga_ch_map.mem",
   parameter bit           CH_MAP_INIT_FILE_IS_BIN  = 0,
   parameter               COL_MAP_INIT_FILE_NAME   = "lab12_vga_col_map.mem",
@@ -36,11 +34,10 @@ module vgachargen
   /*
       Интерфейс установки шрифта.
   */
-  input  logic [ 9:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
+  input  logic [  7:0]    char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
   input  logic            char_tiff_we_i,    // сигнал разрешения записи шрифта
-  input  logic [ 3:0]     char_tiff_be_i,    // сигнал выбора байтов для записи
-  input  logic [31:0]     char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
-  output logic [31:0]     char_tiff_rdata_o, // сигнал чтения пикселей шрифта
+  input  logic [127:0]    char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
+  output logic [127:0]    char_tiff_rdata_o, // сигнал чтения пикселей шрифта
 
   output logic [3:0]      vga_r_o,           // красный канал vga
   output logic [3:0]      vga_g_o,           // зеленый канал vga
@@ -136,7 +133,7 @@ module vgachargen
   );
 
 
-  logic [CH_T_ADDR_WIDTH:0] ch_t_addr_internal;
+  logic [CH_T_ADDR_WIDTH-1:0] ch_t_addr_internal;
 
   logic [3:0][7:0] ch_map_data_word;
 
@@ -157,49 +154,24 @@ module vgachargen
     .doutb_o (ch_map_data_word)
   );
 
-  logic [CH_T_ADDR_WIDTH-1:0] ch_t_ro_addr_internal;
-  assign                      ch_t_ro_addr_internal = ch_t_addr_internal[CH_T_ADDR_WIDTH-1:0];
-  logic [CH_T_DATA_WIDTH-1:0] ch_t_ro_data_internal;
-
-  single_port_ro_bram #(
-    .INIT_FILE_NAME   (CH_T_RO_INIT_FILE_NAME),
-    .INIT_FILE_IS_BIN (CH_T_RO_INIT_FILE_IS_BIN),
-    .DATA_WIDTH       (CH_T_DATA_WIDTH),
-    .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
-  ) ch_t_ro (
-    .clk_i (clk100m_i),
-    .addr_i(ch_t_ro_addr_internal),
-    .dout_o(ch_t_ro_data_internal)
-  );
-
-  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_internal;
-  assign                      ch_t_rw_addr_internal = ch_t_ro_addr_internal;
-  logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data_internal;
+  logic [CH_T_DATA_WIDTH-1:0] ch_t_data_internal;
 
   true_dual_port_rw_bram #(
-    .INIT_FILE_NAME   (CH_T_RW_INIT_FILE_NAME),
-    .INIT_FILE_IS_BIN (CH_T_RW_INIT_FILE_IS_BIN),
+    .INIT_FILE_NAME   (CH_T_INIT_FILE_NAME),
+    .INIT_FILE_IS_BIN (CH_T_INIT_FILE_IS_BIN),
     .NUM_COLS         (1),
     .COL_WIDTH        (CH_T_DATA_WIDTH),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
-  ) ch_t_rw (
+  ) char_tiff (
     .clka_i  (clk_i),
     .clkb_i  (clk100m_i),
-    // .addra_i (ch_t_rw_addr_i),
-    .addra_i (),
+    .addra_i (char_tiff_addr_i),
     .addrb_i (ch_t_rw_addr_internal),
-    // .wea_i   (ch_t_rw_wen_i),
-    .wea_i   (),
-    // .dina_i  (ch_t_rw_data_i),
-    .dina_i  (),
-    // .douta_o (ch_t_rw_data_o),
-    .douta_o (),
-    .doutb_o (ch_t_rw_data_internal)
+    .wea_i   (char_tiff_we_i),
+    .dina_i  (char_tiff_wdata_i),
+    .douta_o (char_tiff_rdata_o),
+    .doutb_o (ch_t_data_internal)
   );
-
-  logic [CH_T_DATA_WIDTH-1:0] ch_t_data_internal;
-  assign                      ch_t_data_internal = ch_t_addr_internal[CH_T_ADDR_WIDTH]  ? ch_t_rw_data_internal
-                                                                                        : ch_t_ro_data_internal;
 
   logic [7:0] col_map_data_internal;
   logic [7:0] col_map_data_internal_delayed;
