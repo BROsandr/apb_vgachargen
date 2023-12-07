@@ -6,4 +6,4 @@ with open('./TextModeMemoryFiles/ch_map.mem', 'w+') as fil:
           s = s[::-1]
           fil.write(f"{''.join(map(str, s))}\n")
           s = []
-      s.append(f"{i%256:02x}")
+      s.append(f"{i%128:02x}")
