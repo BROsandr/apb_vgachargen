@@ -1,42 +1,62 @@
 module vgachargen
   import vgachargen_pkg::*;
 #(
-  parameter int unsigned             CLK_FACTOR_25M           = 100 / 25,
-  parameter                          CH_T_RO_INIT_FILE_NAME   = "ch_t_ro.mem",
-  parameter bit                      CH_T_RO_INIT_FILE_IS_BIN = 1,
-  parameter                          CH_T_RW_INIT_FILE_NAME   = "ch_t_rw.mem",
-  parameter bit                      CH_T_RW_INIT_FILE_IS_BIN = 1,
-  parameter                          CH_MAP_INIT_FILE_NAME    = "ch_map.mem",
-  parameter bit                      CH_MAP_INIT_FILE_IS_BIN  = 0,
-  parameter                          COL_MAP_INIT_FILE_NAME   = "col_map.mem",
-  parameter bit                      COL_MAP_INIT_FILE_IS_BIN = 0
+  parameter int unsigned  CLK_FACTOR_25M           = 100 / 25,
+  parameter               CH_T_RO_INIT_FILE_NAME   = "lab12_vga_ch_t_ro.mem",
+  parameter bit           CH_T_RO_INIT_FILE_IS_BIN = 1,
+  parameter               CH_T_RW_INIT_FILE_NAME   = "lab12_vga_ch_t_rw.mem",
+  parameter bit           CH_T_RW_INIT_FILE_IS_BIN = 1,
+  parameter               CH_MAP_INIT_FILE_NAME    = "lab12_vga_ch_map.mem",
+  parameter bit           CH_MAP_INIT_FILE_IS_BIN  = 0,
+  parameter               COL_MAP_INIT_FILE_NAME   = "lab12_vga_col_map.mem",
+  parameter bit           COL_MAP_INIT_FILE_IS_BIN = 0
 ) (
-  input  logic                       clk_i,
-  input  logic                       clk100m_i,
-  input  logic                       arstn_i,
+  input  logic            clk_i,             // системный синхроимпульс
+  input  logic            clk100m_i,         // клок с частотой 100МГц
+  input  logic            rst_i,             // сигнал сброса
 
-  input  logic [3:0][7:0]            col_map_data_i,
-  input  logic [9:0]                 col_map_addr_i,
-  input  logic [3:0]                 col_map_wen_i,
+  /*
+      Интерфейс записи выводимого символа
+  */
+  input  logic [ 9:0]     char_map_addr_i,   // адрес позиции выводимого символа
+  input  logic            char_map_we_i,     // сигнал разрешения записи кода
+  input  logic [ 3:0]     char_map_be_i,     // сигнал выбора байтов для записи
+  input  logic [31:0]     char_map_wdata_i,  // ascii-код выводимого символа
+  output logic [31:0]     char_map_rdata_o,  // сигнал чтения кода символа
 
-  input  logic [3:0][7:0]            ch_map_data_i,
-  input  logic [9:0]                 ch_map_addr_i,
-  input  logic [3:0]                 ch_map_wen_i,
+  /*
+      Интерфейс установки цветовой схемы
+  */
+  input  logic [ 9:0]     col_map_addr_i,    // адрес позиции устанавливаемой схемы
+  input  logic            col_map_we_i,      // сигнал разрешения записи схемы
+  input  logic [ 3:0]     col_map_be_i,      // сигнал выбора байтов для записи
+  input  logic [31:0]     col_map_wdata_i,   // код устанавливаемой цветовой схемы
+  output logic [31:0]     col_map_rdata_o,   // сигнал чтения кода схемы
 
-  input  logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data_i,
-  input  logic                       ch_t_rw_wen_i,
-  input  logic [CH_T_ADDR_WIDTH-1:0] ch_t_rw_addr_i,
+  /*
+      Интерфейс установки шрифта.
+  */
+  input  logic [ 9:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
+  input  logic            char_tiff_we_i,    // сигнал разрешения записи шрифта
+  input  logic [ 3:0]     char_tiff_be_i,    // сигнал выбора байтов для записи
+  input  logic [31:0]     char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
+  output logic [31:0]     char_tiff_rdata_o, // сигнал чтения пикселей шрифта
 
-  output logic [31:0]                ch_map_data_o,
-  output logic [31:0]                ch_t_rw_data_o,
-  output logic [31:0]                col_map_data_o,
-
-  output logic [3:0]                 vga_r_o,
-  output logic [3:0]                 vga_g_o,
-  output logic [3:0]                 vga_b_o,
-  output logic                       vga_hs_o,
-  output logic                       vga_vs_o
+  output logic [3:0]      vga_r_o,           // красный канал vga
+  output logic [3:0]      vga_g_o,           // зеленый канал vga
+  output logic [3:0]      vga_b_o,           // синий канал vga
+  output logic            vga_hs_o,          // линия горизонтальной синхронизации vga
+  output logic            vga_vs_o           // линия вертикальной синхронизации vga
 );
+
+  logic  [3:0] char_map_be_gated;
+  assign       char_map_be_gated = char_map_be_i & {4{char_map_we_i}};
+
+  logic  [3:0] col_map_be_gated;
+  assign       col_map_be_gated  = col_map_be_i & {4{col_map_we_i}};
+
+  logic  arstn_i;
+  assign arstn_i = ~rst_i;
 
   logic [VGA_MAX_H_WIDTH-1:0] hcount_pixels;
   logic [VGA_MAX_V_WIDTH-1:0] vcount_pixels;
@@ -129,11 +149,11 @@ module vgachargen
   ) ch_map (
     .clka_i  (clk_i),
     .clkb_i  (clk100m_i),
-    .addra_i (ch_map_addr_i),
+    .addra_i (char_map_addr_i),
     .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
-    .wea_i   (ch_map_wen_i),
-    .dina_i  (ch_map_data_i),
-    .douta_o (ch_map_data_o),
+    .wea_i   (char_map_be_gated),
+    .dina_i  (char_map_wdata_i),
+    .douta_o (char_map_rdata_o),
     .doutb_o (ch_map_data_word)
   );
 
@@ -165,11 +185,15 @@ module vgachargen
   ) ch_t_rw (
     .clka_i  (clk_i),
     .clkb_i  (clk100m_i),
-    .addra_i (ch_t_rw_addr_i),
+    // .addra_i (ch_t_rw_addr_i),
+    .addra_i (),
     .addrb_i (ch_t_rw_addr_internal),
-    .wea_i   (ch_t_rw_wen_i),
-    .dina_i  (ch_t_rw_data_i),
-    .douta_o (ch_t_rw_data_o),
+    // .wea_i   (ch_t_rw_wen_i),
+    .wea_i   (),
+    // .dina_i  (ch_t_rw_data_i),
+    .dina_i  (),
+    // .douta_o (ch_t_rw_data_o),
+    .douta_o (),
     .doutb_o (ch_t_rw_data_internal)
   );
 
@@ -209,19 +233,19 @@ module vgachargen
     .clkb_i  (clk100m_i),
     .addra_i (col_map_addr_i),
     .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
-    .wea_i   (col_map_wen_i),
-    .dina_i  (col_map_data_i),
-    .douta_o (col_map_data_o),
+    .wea_i   (col_map_be_gated),
+    .dina_i  (col_map_wdata_i),
+    .douta_o (col_map_rdata_o),
     .doutb_o (col_map_data_internal_word)
   );
 
   logic   currentPixel;
   assign  currentPixel = ch_t_data_internal[bitmap_addr_delayed];
 
-  color_t fg_color;
+  logic [11:0] fg_color;
   assign  fg_color = color_decode(fg_col_map_data);
 
-  color_t bg_color;
+  logic [11:0] bg_color;
   assign  bg_color = color_decode(bg_col_map_data);
 
   // register outputs
