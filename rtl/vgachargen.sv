@@ -166,7 +166,7 @@ module vgachargen
     .clka_i  (clk_i),
     .clkb_i  (clk100m_i),
     .addra_i (char_tiff_addr_i),
-    .addrb_i (ch_t_rw_addr_internal),
+    .addrb_i (ch_t_addr_internal),
     .wea_i   (char_tiff_we_i),
     .dina_i  (char_tiff_wdata_i),
     .douta_o (char_tiff_rdata_o),
