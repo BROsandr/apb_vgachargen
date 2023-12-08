@@ -9,26 +9,12 @@ module vgachargen_synth (
   output logic            vga_hs_o,          // линия горизонтальной синхронизации vga
   output logic            vga_vs_o           // линия вертикальной синхронизации vga
 );
-  logic  clk25m175;
-  logic  locked;
 
-  clk_wiz_0 clk_wiz_0 (
-    // Clock out ports
-    .clk_out1(clk25m175),     // output clk_out1
-    // Status and control signals
-    .resetn  (arstn_i), // input resetn
-    .locked,       // output locked
-    // Clock in ports
-    .clk_in1 (clk_i)
-  );      // input clk_in1
-
-  logic  arstn;
-  assign arstn = arstn_i & locked;
 
   vgachargen vgachargen (
-      .clk_i            (clk_i),     // системный синхроимпульс
-      .clk25m175_i      (clk25m175), // клок с частотой 25m175МГц
-      .rst_i            (~arstn),    // сигнал сброса
+      .clk_i            (clk_i),    // системный синхроимпульс
+      .clk100m_i        (clk_i),    // клок с частотой 100МГц
+      .rst_i            (~arstn_i), // сигнал сброса
 
       /*
           Интерфейс записи выводимого символа
