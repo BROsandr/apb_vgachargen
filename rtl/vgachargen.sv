@@ -3,11 +3,11 @@ module vgachargen
 #(
   parameter int unsigned  CLK_FACTOR_25M           = 100 / 25,
   parameter               CH_T_INIT_FILE_NAME      = "lab12_vga_ch_t.mem",
-  parameter bit           CH_T_INIT_FILE_IS_BIN    = 1,
+  parameter bit           CH_T_INIT_FILE_IS_BIN    = 1'b1,
   parameter               CH_MAP_INIT_FILE_NAME    = "lab12_vga_ch_map.mem",
-  parameter bit           CH_MAP_INIT_FILE_IS_BIN  = 0,
+  parameter bit           CH_MAP_INIT_FILE_IS_BIN  = 1'b0,
   parameter               COL_MAP_INIT_FILE_NAME   = "lab12_vga_col_map.mem",
-  parameter bit           COL_MAP_INIT_FILE_IS_BIN = 0
+  parameter bit           COL_MAP_INIT_FILE_IS_BIN = 1'b0
 ) (
   input  logic            clk_i,             // системный синхроимпульс
   input  logic            clk100m_i,         // клок с частотой 100МГц
