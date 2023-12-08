@@ -46,6 +46,8 @@ module vgachargen
   output logic            vga_vs_o           // линия вертикальной синхронизации vga
 );
 
+if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
+
   logic  [3:0] char_map_be_gated;
   assign       char_map_be_gated = char_map_be_i & {4{char_map_we_i}};
 
