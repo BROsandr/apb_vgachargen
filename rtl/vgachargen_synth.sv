@@ -14,7 +14,7 @@ module vgachargen_synth (
 
   clk_wiz_0 clk_wiz_0 (
     // Clock out ports
-    .clk_out1(clk25m175),     // output clk_out1
+    .clk25m175(clk25m175),     // output clk_out1
     // Status and control signals
     .resetn  (arstn_i), // input resetn
     .locked,       // output locked
@@ -29,7 +29,7 @@ module vgachargen_synth (
     .CLK_FACTOR_25M (1)
   ) vgachargen (
       .clk_i            (clk_i),     // системный синхроимпульс
-      .clk100m_i        (clk25m175), // клок с частотой 25m175МГц
+      .vga_clk_i        (clk25m175), // клок с частотой 25m175МГц
       .rst_i            (~arstn),    // сигнал сброса
 
       /*

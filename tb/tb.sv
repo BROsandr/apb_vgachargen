@@ -34,16 +34,16 @@ module tb ();
   logic [3:0][7:0]  ch_map_data_i;
   logic [9:0]  ch_map_addr_i;
   logic [3:0]                        ch_map_wen_i;
-  logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_i;
+  logic [31:0]    ch_t_rw_data_i;
   logic                          ch_t_rw_wen_i;
-  logic [CH_T_ADDR_WIDTH-1:0]    ch_t_rw_addr_i;
+  logic [9:0]    ch_t_rw_addr_i;
   logic [31:0]  ch_map_data_o;
-  logic [CH_T_DATA_WIDTH-1:0]    ch_t_rw_data_o;
+  logic [31:0]    ch_t_rw_data_o;
   logic [31:0]                    col_map_data_o;
 
   vgachargen vgachargen(
     .clk_i     (sys_clk),             // системный синхроимпульс
-    .clk100m_i (factor_clk),         // клок с частотой 100МГц
+    .vga_clk_i (factor_clk),         // клок с частотой 100МГц
     .rst_i     (arst_n),             // сигнал сброса
 
     .char_map_addr_i  (ch_map_addr_i),   // адрес позиции выводимого символа
@@ -163,36 +163,36 @@ module tb ();
   endtask
 
   task write_ch_t_rw();
-    bit [CH_T_DATA_WIDTH-1:0] counter = CH_T_DATA_WIDTH'(0);
+    bit [31:0] counter = '0;
 
     @(posedge sys_clk);
-    ch_t_rw_addr_i <= CH_T_ADDR_WIDTH'(-1);
+    ch_t_rw_addr_i <= -10'd4;
     ch_t_rw_data_i <= '1;
 
 
-    for (int i = 0; i < 256; ++i) begin
+    for (int i = 0; i < 256 * 4; ++i) begin
       @(posedge sys_clk);
       ch_t_rw_data_i <= counter;
       ch_t_rw_wen_i  <= 1'b1;
-      ch_t_rw_addr_i <= ch_t_rw_addr_i + CH_T_ADDR_WIDTH'(1);
+      ch_t_rw_addr_i <= ch_t_rw_addr_i + 10'd4;
       ++counter;
     end
     ch_t_rw_wen_i  <= 1'b0;
-    ch_t_rw_addr_i <= CH_T_ADDR_WIDTH'(0);
+    ch_t_rw_addr_i <= '0;
   endtask
 
   task read_ch_t_rw();
     bit fail = 0;
-    bit [CH_T_DATA_WIDTH-1:0] counter = CH_T_DATA_WIDTH'(0);
+    bit [31:0] counter = '0;
 
     @(posedge sys_clk);
-    ch_t_rw_addr_i <= CH_T_ADDR_WIDTH'(0);
+    ch_t_rw_addr_i <= '0;
     @(posedge sys_clk);
     @(posedge sys_clk);
 
-    for (int i = 0; i < 255; ++i) begin
-      logic [CH_T_DATA_WIDTH-1:0] ch_t_rw_data;
-      ch_t_rw_addr_i <= ch_t_rw_addr_i + CH_T_ADDR_WIDTH'(1);
+    for (int i = 0; i < 256 * 4 - 1; ++i) begin
+      logic [31:0] ch_t_rw_data;
+      ch_t_rw_addr_i <= ch_t_rw_addr_i + 10'd4;
       @(posedge sys_clk);
       ch_t_rw_data   = ch_t_rw_data_o;
       if (ch_t_rw_data !== counter) begin
@@ -202,7 +202,7 @@ module tb ();
       end
       ++counter;
     end
-    ch_t_rw_addr_i <= CH_T_ADDR_WIDTH'(0);
+    ch_t_rw_addr_i <= '0;
 
     if (!fail) $display("OK    :read_ch_t");
     else       $display("ERROR :read_ch_t");

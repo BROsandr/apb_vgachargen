@@ -10,7 +10,7 @@ module vgachargen
   parameter bit           COL_MAP_INIT_FILE_IS_BIN = 1'b0
 ) (
   input  logic            clk_i,             // системный синхроимпульс
-  input  logic            clk100m_i,         // клок с частотой 100МГц
+  input  logic            vga_clk_i,         // клок с частотой CLK_FACTOR_25M * 25m
   input  logic            rst_i,             // сигнал сброса
 
   /*
@@ -34,10 +34,10 @@ module vgachargen
   /*
       Интерфейс установки шрифта.
   */
-  input  logic [  7:0]    char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
+  input  logic [ 9:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
   input  logic            char_tiff_we_i,    // сигнал разрешения записи шрифта
-  input  logic [127:0]    char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
-  output logic [127:0]    char_tiff_rdata_o, // сигнал чтения пикселей шрифта
+  input  logic [31:0]     char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
+  output logic [31:0]     char_tiff_rdata_o, // сигнал чтения пикселей шрифта
 
   output logic [3:0]      vga_r_o,           // красный канал vga
   output logic [3:0]      vga_g_o,           // зеленый канал vga
@@ -67,7 +67,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
   ) pixel_enable_delay (
-    .clk_i   (clk100m_i),
+    .clk_i   (vga_clk_i),
     .arstn_i (arstn_i),
     .data_i  (pixel_enable),
     .data_o  (pixel_enable_delayed)
@@ -80,7 +80,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
   ) vga_vs_delay (
-    .clk_i   (clk100m_i),
+    .clk_i   (vga_clk_i),
     .arstn_i (arstn_i),
     .data_i  (vga_vs),
     .data_o  (vga_vs_delayed)
@@ -93,7 +93,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .DATA_WIDTH (1),
     .DELAY_BY   (2)
   ) vga_hs_delay (
-    .clk_i   (clk100m_i),
+    .clk_i   (vga_clk_i),
     .arstn_i (arstn_i),
     .data_i  (vga_hs),
     .data_o  (vga_hs_delayed)
@@ -103,7 +103,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
   vga_block #(
     .CLK_FACTOR_25M (CLK_FACTOR_25M)
   ) vga_block (
-    .clk_i          (clk100m_i),
+    .clk_i          (vga_clk_i),
     .arstn_i        (arstn_i),
     .hcount_o       (hcount_pixels),
     .vcount_o       (vcount_pixels),
@@ -121,7 +121,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .DATA_WIDTH (BITMAP_ADDR_WIDTH),
     .DELAY_BY   (2)
   ) bitmap_delay (
-    .clk_i   (clk100m_i),
+    .clk_i   (vga_clk_i),
     .arstn_i (arstn_i),
     .data_i  (bitmap_addr),
     .data_o  (bitmap_addr_delayed)
@@ -147,7 +147,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .ADDR_WIDTH       (10)
   ) ch_map (
     .clka_i  (clk_i),
-    .clkb_i  (clk100m_i),
+    .clkb_i  (vga_clk_i),
     .addra_i (char_map_addr_i),
     .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
     .wea_i   (char_map_be_gated),
@@ -158,20 +158,42 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
 
   logic [CH_T_DATA_WIDTH-1:0] ch_t_data_internal;
 
+  logic [CH_T_ADDR_WIDTH-1:0] char_tiff_addr_128bit;
+  assign                      char_tiff_addr_128bit = char_tiff_addr_i[$left(char_tiff_addr_i):4];
+  logic [1:0]                 char_tiff_addr_offset_32bit;
+  assign                      char_tiff_addr_offset_32bit = char_tiff_addr_i[3:2];
+
+  logic [3:0]                 char_tiff_wea;
+
+  always_comb begin : bin2onehot
+    char_tiff_wea                              = '0;
+    char_tiff_wea[char_tiff_addr_offset_32bit] = char_tiff_we_i;
+  end
+
+  logic [127:0]               char_tiff_addr_offset_128bit;
+  assign                      char_tiff_addr_offset_128bit = {char_tiff_addr_offset_32bit, 5'b00000};
+
+  logic [127:0]               char_tiff_wdata_128bit;
+  assign                      char_tiff_wdata_128bit = char_tiff_wdata_i << char_tiff_addr_offset_128bit;
+
+  logic [127:0]               char_tiff_rdata_128bit;
+
+  assign                      char_tiff_rdata_o      = char_tiff_rdata_128bit[char_tiff_addr_offset_128bit+:32];
+
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   (CH_T_INIT_FILE_NAME),
     .INIT_FILE_IS_BIN (CH_T_INIT_FILE_IS_BIN),
-    .NUM_COLS         (1),
-    .COL_WIDTH        (CH_T_DATA_WIDTH),
+    .NUM_COLS         (4),
+    .COL_WIDTH        (32),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) char_tiff (
     .clka_i  (clk_i),
-    .clkb_i  (clk100m_i),
-    .addra_i (char_tiff_addr_i),
+    .clkb_i  (vga_clk_i),
+    .addra_i (char_tiff_addr_128bit),
     .addrb_i (ch_t_addr_internal),
-    .wea_i   (char_tiff_we_i),
-    .dina_i  (char_tiff_wdata_i),
-    .douta_o (char_tiff_rdata_o),
+    .wea_i   (char_tiff_wea),
+    .dina_i  (char_tiff_wdata_128bit),
+    .douta_o (char_tiff_rdata_128bit),
     .doutb_o (ch_t_data_internal)
   );
 
@@ -186,7 +208,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .DATA_WIDTH (8),
     .DELAY_BY   (1)
   ) col_map_data_delay (
-    .clk_i   (clk100m_i),
+    .clk_i   (vga_clk_i),
     .arstn_i (arstn_i),
     .data_i  (col_map_data_internal),
     .data_o  (col_map_data_internal_delayed)
@@ -204,7 +226,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .ADDR_WIDTH       (10)
   ) col_map (
     .clka_i  (clk_i),
-    .clkb_i  (clk100m_i),
+    .clkb_i  (vga_clk_i),
     .addra_i (col_map_addr_i),
     .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
     .wea_i   (col_map_be_gated),
@@ -241,7 +263,7 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
   assign vga_vs_next = vga_vs_delayed;
   assign vga_hs_next = vga_hs_delayed;
 
-  always_ff @(posedge clk100m_i or negedge arstn_i) begin
+  always_ff @(posedge vga_clk_i or negedge arstn_i) begin
     if (!arstn_i) begin
       vga_r_ff  <= '0;
       vga_g_ff  <= '0;
@@ -274,7 +296,6 @@ module clk_divider # (
   output logic                       strb_o
 );
 
-if (DIVISOR > 1) begin
   localparam int unsigned COUNTER_WIDTH = $clog2(DIVISOR);
 
   logic [COUNTER_WIDTH-1:0] counter_next;
@@ -298,9 +319,6 @@ if (DIVISOR > 1) begin
   end
 
   assign strb_o = strb_ff;
-end else begin
-  assign strb_o = 1'b1;
-end
 
 endmodule
 
@@ -571,6 +589,7 @@ module vga_block
 );
   logic clk_divider_strb;
 
+if (CLK_FACTOR_25M > 1) begin
   clk_divider # (
     .DIVISOR (CLK_FACTOR_25M)
   ) clk_divider (
@@ -578,6 +597,9 @@ module vga_block
     .arstn_i,
     .strb_o  (clk_divider_strb)
   );
+end else begin
+  assign clk_divider_strb = 1'b1;
+end
 
   timing_generator timing_generator (
     .clk_i,
