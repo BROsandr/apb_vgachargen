@@ -34,7 +34,7 @@ module vgachargen
   /*
       Интерфейс установки шрифта.
   */
-  input  logic [ 9:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
+  input  logic [11:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
   input  logic            char_tiff_we_i,    // сигнал разрешения записи шрифта
   input  logic [31:0]     char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
   output logic [31:0]     char_tiff_rdata_o, // сигнал чтения пикселей шрифта
@@ -170,15 +170,24 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     char_tiff_wea[char_tiff_addr_offset_32bit] = char_tiff_we_i;
   end
 
-  logic [127:0]               char_tiff_addr_offset_128bit;
+  logic [6:0]                 char_tiff_addr_offset_128bit;
+  logic [6:0]                 char_tiff_addr_offset_128bit_ff;
   assign                      char_tiff_addr_offset_128bit = {char_tiff_addr_offset_32bit, 5'b00000};
 
   logic [127:0]               char_tiff_wdata_128bit;
-  assign                      char_tiff_wdata_128bit = char_tiff_wdata_i << char_tiff_addr_offset_128bit;
+
+  always_comb begin
+    char_tiff_wdata_128bit                                   = '0;
+    char_tiff_wdata_128bit[char_tiff_addr_offset_128bit+:32] = char_tiff_wdata_i;
+  end
 
   logic [127:0]               char_tiff_rdata_128bit;
 
-  assign                      char_tiff_rdata_o      = char_tiff_rdata_128bit[char_tiff_addr_offset_128bit+:32];
+  assign                      char_tiff_rdata_o      = char_tiff_rdata_128bit[char_tiff_addr_offset_128bit_ff+:32];
+
+  always_ff @(posedge clk_i) begin
+    char_tiff_addr_offset_128bit_ff <= char_tiff_addr_offset_128bit;
+  end
 
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   (CH_T_INIT_FILE_NAME),
