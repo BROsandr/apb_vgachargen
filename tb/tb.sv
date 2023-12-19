@@ -36,7 +36,7 @@ module tb ();
   logic [3:0]                        ch_map_wen_i;
   logic [31:0]    ch_t_rw_data_i;
   logic                          ch_t_rw_wen_i;
-  logic [11:0]    ch_t_rw_addr_i;
+  logic [9:0]    ch_t_rw_addr_i;
   logic [31:0]  ch_map_data_o;
   logic [31:0]    ch_t_rw_data_o;
   logic [31:0]                    col_map_data_o;
@@ -166,7 +166,7 @@ module tb ();
     bit [31:0] counter = '0;
 
     @(posedge sys_clk);
-    ch_t_rw_addr_i <= -12'd4;
+    ch_t_rw_addr_i <= -10'd1;
     ch_t_rw_data_i <= '1;
 
 
@@ -174,7 +174,7 @@ module tb ();
       @(posedge sys_clk);
       ch_t_rw_data_i <= counter;
       ch_t_rw_wen_i  <= 1'b1;
-      ch_t_rw_addr_i <= ch_t_rw_addr_i + 12'd4;
+      ch_t_rw_addr_i <= ch_t_rw_addr_i + 10'd1;
       ++counter;
     end
     ch_t_rw_wen_i  <= 1'b0;
@@ -192,7 +192,7 @@ module tb ();
 
     for (int i = 0; i < 256 * 4 - 1; ++i) begin
       logic [31:0] ch_t_rw_data;
-      ch_t_rw_addr_i <= ch_t_rw_addr_i + 12'd4;
+      ch_t_rw_addr_i <= ch_t_rw_addr_i + 12'd1;
       @(posedge sys_clk);
       ch_t_rw_data   = ch_t_rw_data_o;
       if (ch_t_rw_data !== counter) begin
