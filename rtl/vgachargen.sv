@@ -36,6 +36,7 @@ module vgachargen
   */
   input  logic [ 9:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
   input  logic            char_tiff_we_i,    // сигнал разрешения записи шрифта
+  input  logic [ 3:0]     char_tiff_be_i,    // сигнал выбора байтов для записи
   input  logic [31:0]     char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
   output logic [31:0]     char_tiff_rdata_o, // сигнал чтения пикселей шрифта
 
@@ -53,6 +54,9 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
 
   logic  [3:0] col_map_be_gated;
   assign       col_map_be_gated  = col_map_be_i & {4{col_map_we_i}};
+
+  logic  [3:0] char_tiff_be_gated;
+  assign       char_tiff_be_gated  = char_tiff_be_i & {4{char_tiff_we_i}};
 
   logic  arstn_i;
   assign arstn_i = ~rst_i;
@@ -163,11 +167,11 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
   logic [1:0]                 char_tiff_addr_offset_32bit;
   assign                      char_tiff_addr_offset_32bit = char_tiff_addr_i[1:0];
 
-  logic [3:0]                 char_tiff_wea;
+  logic [3:0][3:0]            char_tiff_wea;
 
   always_comb begin : bin2onehot
     char_tiff_wea                              = '0;
-    char_tiff_wea[char_tiff_addr_offset_32bit] = char_tiff_we_i;
+    char_tiff_wea[char_tiff_addr_offset_32bit] = char_tiff_be_gated;
   end
 
   logic [6:0]                 char_tiff_addr_offset_128bit;
@@ -192,8 +196,8 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
   true_dual_port_rw_bram #(
     .INIT_FILE_NAME   (CH_T_INIT_FILE_NAME),
     .INIT_FILE_IS_BIN (CH_T_INIT_FILE_IS_BIN),
-    .NUM_COLS         (4),
-    .COL_WIDTH        (32),
+    .NUM_COLS         (16),
+    .COL_WIDTH        (8),
     .ADDR_WIDTH       (CH_T_ADDR_WIDTH)
   ) char_tiff (
     .clka_i  (clk_i),

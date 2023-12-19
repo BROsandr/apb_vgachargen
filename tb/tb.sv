@@ -35,10 +35,10 @@ module tb ();
   logic [9:0]  ch_map_addr_i;
   logic [3:0]                        ch_map_wen_i;
   logic [31:0]    ch_t_rw_data_i;
-  logic                          ch_t_rw_wen_i;
   logic [9:0]    ch_t_rw_addr_i;
   logic [31:0]  ch_map_data_o;
   logic [31:0]    ch_t_rw_data_o;
+  logic [ 3:0]     ch_t_rw_wen_i;
   logic [31:0]                    col_map_data_o;
 
   vgachargen vgachargen(
@@ -58,8 +58,8 @@ module tb ();
     .col_map_rdata_o  (col_map_data_o),   // сигнал чтения кода схемы
 
    .char_tiff_addr_i (ch_t_rw_addr_i),  // адрес позиции устанавливаемого шрифта
-   .char_tiff_we_i   (ch_t_rw_wen_i),    // сигнал разрешения записи шрифта
-//    .char_tiff_be_i   (),    // сигнал выбора байтов для записи
+   .char_tiff_we_i   (|ch_t_rw_wen_i),    // сигнал разрешения записи шрифта
+   .char_tiff_be_i   (ch_t_rw_wen_i),               // сигнал выбора байтов для записи
    .char_tiff_wdata_i(ch_t_rw_data_i), // отображаемые пиксели в текущей позиции шрифта
    .char_tiff_rdata_o(ch_t_rw_data_o), // сигнал чтения пикселей шрифта
 
@@ -173,11 +173,11 @@ module tb ();
     for (int i = 0; i < 256 * 4; ++i) begin
       @(posedge sys_clk);
       ch_t_rw_data_i <= counter;
-      ch_t_rw_wen_i  <= 1'b1;
+      ch_t_rw_wen_i  <= 4'b1111;
       ch_t_rw_addr_i <= ch_t_rw_addr_i + 10'd1;
       ++counter;
     end
-    ch_t_rw_wen_i  <= 1'b0;
+    ch_t_rw_wen_i  <= '0;
     ch_t_rw_addr_i <= '0;
   endtask
 
