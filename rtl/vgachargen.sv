@@ -17,6 +17,7 @@ module vgachargen
       Интерфейс записи выводимого символа
   */
   input  logic [ 9:0]     char_map_addr_i,   // адрес позиции выводимого символа
+  input  logic            char_map_ce_i,     // сигнал разрешения работы схемы (ce)
   input  logic            char_map_we_i,     // сигнал разрешения записи кода
   input  logic [ 3:0]     char_map_be_i,     // сигнал выбора байтов для записи
   input  logic [31:0]     char_map_wdata_i,  // ascii-код выводимого символа
@@ -26,6 +27,7 @@ module vgachargen
       Интерфейс установки цветовой схемы
   */
   input  logic [ 9:0]     col_map_addr_i,    // адрес позиции устанавливаемой схемы
+  input  logic            col_map_ce_i,      // сигнал разрешения работы схемы (ce)
   input  logic            col_map_we_i,      // сигнал разрешения записи схемы
   input  logic [ 3:0]     col_map_be_i,      // сигнал выбора байтов для записи
   input  logic [31:0]     col_map_wdata_i,   // код устанавливаемой цветовой схемы
@@ -35,6 +37,7 @@ module vgachargen
       Интерфейс установки шрифта.
   */
   input  logic [ 9:0]     char_tiff_addr_i,  // адрес позиции устанавливаемого шрифта
+  input  logic            char_tiff_ce_i,    // сигнал разрешения работы схемы (ce)
   input  logic            char_tiff_we_i,    // сигнал разрешения записи шрифта
   input  logic [ 3:0]     char_tiff_be_i,    // сигнал выбора байтов для записи
   input  logic [31:0]     char_tiff_wdata_i, // отображаемые пиксели в текущей позиции шрифта
@@ -154,6 +157,8 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .clkb_i  (vga_clk_i),
     .addra_i (char_map_addr_i),
     .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
+    .cea_i   (char_map_ce_i),
+    .ceb_i   (1'b1),
     .wea_i   (char_map_be_gated),
     .dina_i  (char_map_wdata_i),
     .douta_o (char_map_rdata_o),
@@ -205,6 +210,8 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .addra_i (char_tiff_addr_128bit),
     .addrb_i (ch_t_addr_internal),
     .wea_i   (char_tiff_wea),
+    .cea_i   (char_tiff_ce_i),
+    .ceb_i   (1'b1),
     .dina_i  (char_tiff_wdata_128bit),
     .douta_o (char_tiff_rdata_128bit),
     .doutb_o (ch_t_data_internal)
@@ -243,6 +250,8 @@ if (CLK_FACTOR_25M == 0) error_unsupported_factor error_unsupported_factor ();
     .addra_i (col_map_addr_i),
     .addrb_i (ch_map_addr_internal[$left(ch_map_addr_internal):2]),
     .wea_i   (col_map_be_gated),
+    .cea_i   (col_map_ce_i),
+    .ceb_i   (1'b1),
     .dina_i  (col_map_wdata_i),
     .douta_o (col_map_rdata_o),
     .doutb_o (col_map_data_internal_word)
@@ -555,6 +564,8 @@ module true_dual_port_rw_bram #(
   input  logic                  clkb_i,
   input  logic [ADDR_WIDTH-1:0] addra_i,
   input  logic [ADDR_WIDTH-1:0] addrb_i,
+  input  logic                  cea_i,
+  input  logic                  ceb_i,
   input  logic [NUM_COLS  -1:0] wea_i,
   input  logic [DATA_WIDTH-1:0] dina_i,
   output logic [DATA_WIDTH-1:0] douta_o,
@@ -572,17 +583,23 @@ module true_dual_port_rw_bram #(
   end
 
   always_ff @(posedge clka_i) begin
-    for (int i = 0; i < NUM_COLS; ++i) begin
-      if (wea_i[i]) mem[addra_i][i*COL_WIDTH+:COL_WIDTH] <= dina_i[i*COL_WIDTH+:COL_WIDTH];
+    if (cea_i) begin
+      for (int i = 0; i < NUM_COLS; ++i) begin
+        if (wea_i[i]) mem[addra_i][i*COL_WIDTH+:COL_WIDTH] <= dina_i[i*COL_WIDTH+:COL_WIDTH];
+      end
     end
   end
 
   always_ff @(posedge clka_i) begin
-    douta_o <= mem[addra_i];
+    if (cea_i) begin
+      douta_o <= mem[addra_i];
+    end
   end
 
   always_ff @(posedge clkb_i) begin
-    doutb_o <= mem[addrb_i];
+    if (ceb_i) begin
+      doutb_o <= mem[addrb_i];
+    end
   end
 
 endmodule

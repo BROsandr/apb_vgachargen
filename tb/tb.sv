@@ -41,23 +41,28 @@ module tb ();
   logic [ 3:0]     ch_t_rw_wen_i;
   logic [31:0]                    col_map_data_o;
 
+  logic ch_map_ce_i, col_map_ce_i, ch_t_rw_ce_i;
+
   vgachargen vgachargen(
     .clk_i     (sys_clk),             // системный синхроимпульс
     .vga_clk_i (factor_clk),         // клок с частотой 100МГц
     .rst_i     (arst_n),             // сигнал сброса
 
     .char_map_addr_i  (ch_map_addr_i),   // адрес позиции выводимого символа
+    .char_map_ce_i    (ch_map_ce_i),
     .char_map_we_i    (|ch_map_wen_i),     // сигнал разрешения записи кода
     .char_map_be_i   (ch_map_wen_i),  // сигнал выбора байтов для записи
     .char_map_wdata_i (ch_map_data_i),  // ascii-код выводимого символа
     .char_map_rdata_o (ch_map_data_o),  // сигнал чтения кода символа
     .col_map_addr_i   (col_map_addr_i),    // адрес позиции устанавливаемой схемы
+    .col_map_ce_i     (col_map_ce_i),
     .col_map_we_i     (|col_map_wen_i),      // сигнал разрешения записи схемы
     .col_map_be_i     (col_map_wen_i),      // сигнал выбора байтов для записи
     .col_map_wdata_i  (col_map_data_i),   // код устанавливаемой цветовой схемы
     .col_map_rdata_o  (col_map_data_o),   // сигнал чтения кода схемы
 
    .char_tiff_addr_i (ch_t_rw_addr_i),  // адрес позиции устанавливаемого шрифта
+   .char_tiff_ce_i   (ch_t_rw_ce_i),
    .char_tiff_we_i   (|ch_t_rw_wen_i),    // сигнал разрешения записи шрифта
    .char_tiff_be_i   (ch_t_rw_wen_i),               // сигнал выбора байтов для записи
    .char_tiff_wdata_i(ch_t_rw_data_i), // отображаемые пиксели в текущей позиции шрифта
@@ -81,11 +86,13 @@ module tb ();
     for (int i = 0; i < 2400 / 4; ++i) begin
       @(posedge sys_clk);
       col_map_data_i <= {4{counter}};
+      col_map_ce_i   <= 1'b1;
       col_map_wen_i  <= 4'b1111;
       col_map_addr_i <= col_map_addr_i + 10'h1;
       ++counter;
     end
     col_map_wen_i  <= 1'b0;
+    col_map_ce_i   <= 1'b0;
     col_map_addr_i <= 10'h0;
   endtask
 
@@ -94,6 +101,7 @@ module tb ();
     byte counter = 0;
 
     @(posedge sys_clk);
+    col_map_ce_i   <= 1'b1;
     col_map_addr_i <= 10'h0;
     @(posedge sys_clk);
     @(posedge sys_clk);
@@ -110,6 +118,7 @@ module tb ();
       end
       ++counter;
     end
+    col_map_ce_i   <= 1'b0;
     col_map_addr_i <= 10'h0;
 
     if (!fail) $display("OK    :read_col_map");
@@ -127,11 +136,13 @@ module tb ();
     for (int i = 0; i < 600; ++i) begin
       @(posedge sys_clk);
       ch_map_data_i <= counter;
+      ch_map_ce_i   <= 1'b1;
       ch_map_wen_i  <= 4'b1111;
       ch_map_addr_i <= ch_map_addr_i + CH_MAP_ADDR_WIDTH'(1);
       ++counter;
     end
     ch_map_wen_i  <= 1'b0;
+    ch_map_ce_i   <= 1'b0;
     ch_map_addr_i <= CH_MAP_ADDR_WIDTH'(0);
   endtask
 
@@ -141,6 +152,7 @@ module tb ();
 
     @(posedge sys_clk);
     ch_map_addr_i <= CH_MAP_ADDR_WIDTH'(0);
+    ch_map_ce_i   <= 1'b1;
     @(posedge sys_clk);
     @(posedge sys_clk);
 
@@ -157,6 +169,7 @@ module tb ();
       ++counter;
     end
     ch_map_addr_i <= CH_MAP_ADDR_WIDTH'(0);
+    ch_map_ce_i   <= 1'b0;
 
     if (!fail) $display("OK    :read_ch_map");
     else       $display("ERROR :read_ch_map");
@@ -174,11 +187,13 @@ module tb ();
       @(posedge sys_clk);
       ch_t_rw_data_i <= counter;
       ch_t_rw_wen_i  <= 4'b1111;
+      ch_t_rw_ce_i   <= 1'b1;
       ch_t_rw_addr_i <= ch_t_rw_addr_i + 10'd1;
       ++counter;
     end
     ch_t_rw_wen_i  <= '0;
     ch_t_rw_addr_i <= '0;
+    ch_t_rw_ce_i   <= 1'b0;
   endtask
 
   task read_ch_t_rw();
@@ -187,6 +202,7 @@ module tb ();
 
     @(posedge sys_clk);
     ch_t_rw_addr_i <= '0;
+    ch_t_rw_ce_i   <= 1'b1;
     @(posedge sys_clk);
     @(posedge sys_clk);
 
@@ -203,6 +219,7 @@ module tb ();
       ++counter;
     end
     ch_t_rw_addr_i <= '0;
+    ch_t_rw_ce_i   <= 1'b0;
 
     if (!fail) $display("OK    :read_ch_t");
     else       $display("ERROR :read_ch_t");
